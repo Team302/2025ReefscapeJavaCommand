@@ -1,7 +1,5 @@
 package frc.robot.subsystems;
 
-import static edu.wpi.first.units.Units.*;
-
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.SignalLogger;
@@ -15,14 +13,19 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.units.Units;
+import static edu.wpi.first.units.Units.Second;
+import static edu.wpi.first.units.Units.Volts;
+import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
 
 /**
@@ -284,5 +287,31 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         Matrix<N3, N1> visionMeasurementStdDevs
     ) {
         super.addVisionMeasurement(visionRobotPoseMeters, Utils.fpgaToCurrentTime(timestampSeconds), visionMeasurementStdDevs);
+    }
+
+    Timer m_debounceTimer = new Timer();
+    final Time m_samePoseTime = Units.Seconds.of(0.5);
+    final Distance m_distanceThreshold = Units.Inches.of(0.25);
+    Pose2d m_prevPose;
+
+    Pose2d GetPose(){
+        return this.getState().Pose;
+    }
+    void ResetSamePose(){
+        m_debounceTimer.reset();
+        m_prevPose = GetPose();
+    }
+    boolean IsSamePose(){
+        boolean isCurrentlyStopped = GetPose().getTranslation().getDistance(m_prevPose.getTranslation()) < m_distanceThreshold.magnitude();
+        if (isCurrentlyStopped){
+            if(!m_debounceTimer.isRunning()){
+                m_debounceTimer.start();
+            }
+        }
+        else{
+            m_debounceTimer.reset();
+        }
+        m_prevPose = GetPose();
+        return m_debounceTimer.hasElapsed(m_samePoseTime.magnitude());
     }
 }
