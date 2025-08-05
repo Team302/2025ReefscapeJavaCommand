@@ -50,16 +50,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     private final SwerveRequest.SysIdSwerveSteerGains m_steerCharacterization = new SwerveRequest.SysIdSwerveSteerGains();
     private final SwerveRequest.SysIdSwerveRotation m_rotationCharacterization = new SwerveRequest.SysIdSwerveRotation();
 
-    private final Slot0Configs m_slot0Configs = new Slot0Configs();
-    {
-        m_slot0Configs.kP = 27.263;
-        m_slot0Configs.kI = 0;
-        m_slot0Configs.kD = 1.3715;
-        m_slot0Configs.kS = 0.125;
-        m_slot0Configs.kV = 2.5299;
-        m_slot0Configs.kA = 0.02;
-    }
-
     /* SysId routine for characterizing translation. This is used to find PID gains for the drive motors. */
     private final SysIdRoutine m_sysIdRoutineTranslation = new SysIdRoutine(
         new SysIdRoutine.Config(
