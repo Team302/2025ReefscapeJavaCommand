@@ -314,4 +314,8 @@ motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward
   public Command moveAtVelocityCommand(double velocityMetersPerSecond) {
     return run(() -> setVelocity(velocityMetersPerSecond));
   }
+
+  public Command openLoopCommand(double voltage) {
+    return run(() -> setVoltage(voltage));
+  }
 }
