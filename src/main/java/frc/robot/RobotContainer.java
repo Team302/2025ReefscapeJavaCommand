@@ -45,7 +45,7 @@ public class RobotContainer {
 
   private final CommandXboxController joystick = new CommandXboxController(0);
 
-    public final Climber climber = new Climber();
+  public final Climber climber = new Climber();
 
   public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
@@ -114,9 +114,10 @@ public class RobotContainer {
 
         //climberer
 
-        // joystick.povUp()
-        //     .whileTrue(climber.openLoopCommand(10));
-        
+         joystick.povUp()
+             .whileTrue(climber.moveToAngleCommand(180));
+         joystick.povDown()
+             .whileTrue(climber.moveToAngleCommand(70));
         climber.setDefaultCommand(
             climber.stopCommand() // Default command to stop the climber when no button is pressed
         );

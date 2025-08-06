@@ -96,9 +96,6 @@ slot0.kP = kP;
 slot0.kI = kI;
 slot0.kD = kD;
 
-
-  ClosedLoopRampsConfigs closedLoopRamps = config.ClosedLoopRamps;
-
 // Set current limits
 CurrentLimitsConfigs currentLimits = config.CurrentLimits;
 currentLimits.StatorCurrentLimit = statorCurrentLimit;
