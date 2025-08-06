@@ -114,8 +114,8 @@ public class RobotContainer {
 
         //climberer
 
-        joystick.povUp()
-            .whileTrue(climber.openLoopCommand(10));
+        // joystick.povUp()
+        //     .whileTrue(climber.openLoopCommand(10));
         
         climber.setDefaultCommand(
             climber.stopCommand() // Default command to stop the climber when no button is pressed
