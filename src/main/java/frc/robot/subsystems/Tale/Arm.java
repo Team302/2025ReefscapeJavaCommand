@@ -1,4 +1,4 @@
-package frc.robot.subsystems.climber;
+package frc.robot.subsystems.Tale;
 
 import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -15,7 +15,6 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -29,21 +28,22 @@ import edu.wpi.first.units.measure.*;
 /**
 * Arm subsystem using TalonFX with Krakenx60 motor
 */
-@Logged(name = "ClimberSubsystem")
-public class Climber extends SubsystemBase {
+@Logged(name = "ElevatorSubsystem")
+public class Arm extends SubsystemBase {
  // Constants
- private final int canID = 7;
- private final double gearRatio = 1.0495;
-  private final double kP = 1;
-  private final double kI = 0;
-  private final double kD = 0.08;
+ private final int canID = 17;
+ private final double gearRatio = 1;
+  private final double kP = 57;
+  private final double kI = 25;
+  private final double kD = 0;
  private final double maxVelocity = 1; // rad/s
  private final double maxAcceleration = 1; // rad/s²
+ private final double closedLoopRampRate = 0.25; // seconds to full speed
  private final boolean brakeMode = true;
- private final double forwardSoftLimit = -180; // max angle in radians
- private final double reverseSoftLimit = 0; // min angle in radians
+ private final double forwardSoftLimit = 89; // max angle in radians
+ private final double reverseSoftLimit = -30; // min angle in radians
  private final boolean enableStatorLimit = true;
- private final double statorCurrentLimit = 70;
+ private final double statorCurrentLimit = 120;
  private final boolean enableSupplyLimit = true;
  private final double supplyCurrentLimit = 70;
  private final double armLength = 1; // meters
@@ -52,8 +52,8 @@ public class Climber extends SubsystemBase {
  private final ArmFeedforward feedforward = new ArmFeedforward(
    0, // kS
    0, // kG
-   0, // kV
-   0  // kA
+   0.75, // kV
+   0.25  // kA
  );
  
  // Motor controller
@@ -67,14 +67,14 @@ private final StatusSignal<Current> statorCurrentSignal;
 private final StatusSignal<Temperature> temperatureSignal;
 
  
- private DutyCycleOut m_dutyCycleOut = new DutyCycleOut(0);
+ 
  // Simulation
  private final SingleJointedArmSim armSim;
  
  /**
   * Creates a new Arm Subsystem.
   */
- public Climber() {
+ public Arm() {
    // Initialize motor controller
    motor = new TalonFX(canID);
 
@@ -96,6 +96,12 @@ Slot0Configs slot0 = config.Slot0;
 slot0.kP = kP;
 slot0.kI = kI;
 slot0.kD = kD;
+
+
+  ClosedLoopRampsConfigs closedLoopRamps = config.ClosedLoopRamps;
+  closedLoopRamps.VoltageClosedLoopRampPeriod = closedLoopRampRate;
+
+  //NOTE: closed loop ramp rate is not defined in the generator
 
 // Set current limits
 CurrentLimitsConfigs currentLimits = config.CurrentLimits;
@@ -127,12 +133,12 @@ motor.setPosition(0);
    armSim = new SingleJointedArmSim(
      DCMotor.getKrakenX60(1), // Motor type
      gearRatio,
-     SingleJointedArmSim.estimateMOI(armLength, 5), // Arm moment of inertia
+     SingleJointedArmSim.estimateMOI(armLength, 4.53592), // Arm moment of inertia
      armLength, // Arm length (m)
-     Units.degreesToRadians(0), // Min angle (rad)
-     Units.degreesToRadians(3.141592653589793), // Max angle (rad)
+     Units.degreesToRadians(-0.5235987755982988), // Min angle (rad)
+     Units.degreesToRadians(1.5533430342749535), // Max angle (rad)
      true, // Simulate gravity
-     Units.degreesToRadians(0) // Starting position (rad)
+     Units.degreesToRadians(1.5184364492350666) // Starting position (rad)
    );
    
  }
@@ -218,23 +224,14 @@ public double getTemperature() {
   * @param angleDegrees The target angle in degrees
   * @param acceleration The acceleration in rad/s²
   */
- public void setAngle(double angleDegrees, double acceleration) 
- {
+ public void setAngle(double angleDegrees, double acceleration) {
    // Convert degrees to rotations
    double angleRadians = Units.degreesToRadians(angleDegrees);
    double positionRotations = angleRadians / (2.0 * Math.PI);
    
-  double ffVolts = feedforward.calculate(getVelocity(), acceleration);
-  motor.setControl(positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
- }
- 
-/**
- * Set arm duty cycle.
- * @param percentage
- */
- public void setDutyCycle(double percentage) {
-  m_dutyCycleOut.Output = percentage;
-  motor.set(m_dutyCycleOut.Output);
+   
+double ffVolts = feedforward.calculate(getVelocity(), acceleration);
+motor.setControl(positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
  }
  
  /**
@@ -258,6 +255,15 @@ public double getTemperature() {
    double ffVolts = feedforward.calculate(getVelocity(), acceleration);
 motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
  }
+ 
+ /**
+  * Set motor voltage directly.
+  * @param voltage The voltage to apply
+  */
+ public void setVoltage(double voltage) {
+   motor.setVoltage(voltage);
+ }
+ 
  /**
   * Get the arm simulation for testing.
   * @return The arm simulation model
@@ -291,14 +297,18 @@ motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward
      return Math.abs(angleDegrees - currentAngle) < 2.0; // 2 degree tolerance
    }).finallyDo((interrupted) -> setVelocity(0));}
 
-   /**
-    * Creates a command to set a duty cycle for the arm.
-    * @return A command that sets the arm to a specific duty cycle
-    */
 
-  public Command setDutyCycleCommand(double percentage) {
-    return run(() -> setDutyCycle(percentage));
-  }
+   //original generated code
+   /* public Command moveToAngleCommand(double angleDegrees) {
+   return run(() -> {
+     double currentAngle = Units.radiansToDegrees(getPositionRadians());
+     double error = angleDegrees - currentAngle;
+     double velocityDegPerSec = Math.signum(error) * Math.min(Math.abs(error) * 2.0, Units.radiansToDegrees(maxVelocity));
+     setVelocity(velocityDegPerSec);
+   }).until(() -> {
+     double currentAngle = Units.radiansToDegrees(getPositionRadians());
+     return Math.abs(angleDegrees - currentAngle) < 2.0; // 2 degree tolerance
+   }).finallyDo((interrupted) -> setVelocity(0));} */
  
  /**
   * Creates a command to stop the arm.
@@ -306,5 +316,14 @@ motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward
   */
  public Command stopCommand() {
    return runOnce(() -> setVelocity(0));
+ }
+ 
+ /**
+  * Creates a command to move the arm at a specific velocity.
+  * @param velocityDegPerSec The target velocity in degrees per second
+  * @return A command that moves the arm at the specified velocity
+  */
+ public Command moveAtVelocityCommand(double velocityDegPerSec) {
+   return run(() -> setVelocity(velocityDegPerSec));
  }
 }
