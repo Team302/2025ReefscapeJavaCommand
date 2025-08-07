@@ -30,10 +30,10 @@ import edu.wpi.first.wpilibj.DigitalInput;
 /**
 * Arm subsystem using TalonFXS with Minion motor
 */
-@Logged(name = "CoralMechSubsystem")
-public class Coralmech extends SubsystemBase {
+@Logged(name = "AlgaeMechSubsystem")
+public class Algaemech extends SubsystemBase {
  // Constants
- private final int canID = 18;
+ private final int canID = 19;
  private final double gearRatio = 4;
   private final double kP = 0;
   private final double kI = 0;
@@ -68,9 +68,9 @@ private final StatusSignal<Current> statorCurrentSignal;
 private final StatusSignal<Temperature> temperatureSignal;
 
  // voltage 
-private DutyCycleOut m_coralPercentOutput = new DutyCycleOut(0);
+private DutyCycleOut m_AlgaePercentOutput = new DutyCycleOut(0);
 // Digital input
-public DigitalInput digitalInput = new DigitalInput(0);
+public DigitalInput digitalInput = new DigitalInput(1);
  
  // Simulation
  private final SingleJointedArmSim armSim;
@@ -78,7 +78,7 @@ public DigitalInput digitalInput = new DigitalInput(0);
  /**
   * Creates a new Arm Subsystem.
   */
- public Coralmech() {
+ public Algaemech() {
    // Initialize motor controller
    motor = new TalonFXS(canID);
 
@@ -231,8 +231,8 @@ public boolean getDigitalInput() {
   * @param request The PositionVoltage request
   */
   public void setDutyCycle(double percentage) {
-    m_coralPercentOutput.Output = percentage;
-    motor.set(m_coralPercentOutput.Output);
+    m_AlgaePercentOutput.Output = percentage;
+    motor.set(m_AlgaePercentOutput.Output);
   }
     /**
   * Get the arm simulation for testing.
