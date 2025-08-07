@@ -15,6 +15,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -66,7 +67,7 @@ private final StatusSignal<Current> statorCurrentSignal;
 private final StatusSignal<Temperature> temperatureSignal;
 
  
- 
+ private DutyCycleOut m_dutyCycleOut = new DutyCycleOut(0);
  // Simulation
  private final SingleJointedArmSim armSim;
  
@@ -217,14 +218,23 @@ public double getTemperature() {
   * @param angleDegrees The target angle in degrees
   * @param acceleration The acceleration in rad/s²
   */
- public void setAngle(double angleDegrees, double acceleration) {
+ public void setAngle(double angleDegrees, double acceleration) 
+ {
    // Convert degrees to rotations
    double angleRadians = Units.degreesToRadians(angleDegrees);
    double positionRotations = angleRadians / (2.0 * Math.PI);
    
-   
-double ffVolts = feedforward.calculate(getVelocity(), acceleration);
-motor.setControl(positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
+  double ffVolts = feedforward.calculate(getVelocity(), acceleration);
+  motor.setControl(positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
+ }
+ 
+/**
+ * Set arm duty cycle.
+ * @param percentage
+ */
+ public void setDutyCycle(double percentage) {
+  m_dutyCycleOut.Output = percentage;
+  motor.set(m_dutyCycleOut.Output);
  }
  
  /**
@@ -248,15 +258,6 @@ motor.setControl(positionRequest.withPosition(positionRotations).withFeedForward
    double ffVolts = feedforward.calculate(getVelocity(), acceleration);
 motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
  }
- 
- /**
-  * Set motor voltage directly.
-  * @param voltage The voltage to apply
-  */
- public void setVoltage(double voltage) {
-   motor.setVoltage(voltage);
- }
- 
  /**
   * Get the arm simulation for testing.
   * @return The arm simulation model
@@ -289,6 +290,15 @@ motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward
      double currentAngle = Units.rotationsToDegrees(getPosition());
      return Math.abs(angleDegrees - currentAngle) < 2.0; // 2 degree tolerance
    }).finallyDo((interrupted) -> setVelocity(0));}
+
+   /**
+    * Creates a command to set a duty cycle for the arm.
+    * @return A command that sets the arm to a specific duty cycle
+    */
+
+  public Command setDutyCycleCommand(double percentage) {
+    return run(() -> setDutyCycle(percentage));
+  }
  
  /**
   * Creates a command to stop the arm.
@@ -296,14 +306,5 @@ motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward
   */
  public Command stopCommand() {
    return runOnce(() -> setVelocity(0));
- }
- 
- /**
-  * Creates a command to move the arm at a specific velocity.
-  * @param velocityDegPerSec The target velocity in degrees per second
-  * @return A command that moves the arm at the specified velocity
-  */
- public Command moveAtVelocityCommand(double velocityDegPerSec) {
-   return run(() -> setVelocity(velocityDegPerSec));
  }
 }
