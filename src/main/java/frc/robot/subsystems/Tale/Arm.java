@@ -9,14 +9,17 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
 
-
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
@@ -57,17 +60,16 @@ public class Arm extends SubsystemBase {
  );
  
  // Motor controller
- private final TalonFX motor;
-private final PositionVoltage positionRequest;
-private final VelocityVoltage velocityRequest;
+ private final TalonFX m_motor;
+ private final CANcoder m_canCoder;
+private final PositionVoltage m_positionRequest;
+private final VelocityVoltage m_velocityRequest;
 private final StatusSignal<Angle> positionSignal;
 private final StatusSignal<AngularVelocity> velocitySignal;
 private final StatusSignal<Voltage> voltageSignal;
 private final StatusSignal<Current> statorCurrentSignal;
 private final StatusSignal<Temperature> temperatureSignal;
 
- 
- 
  // Simulation
  private final SingleJointedArmSim armSim;
  
@@ -76,58 +78,70 @@ private final StatusSignal<Temperature> temperatureSignal;
   */
  public Arm() {
    // Initialize motor controller
-   motor = new TalonFX(canID);
+   m_motor = new TalonFX(canID);
+   m_canCoder = new CANcoder(canID);
 
 // Create control requests
-positionRequest = new PositionVoltage(0).withSlot(0);
-velocityRequest = new VelocityVoltage(0).withSlot(0);
+m_positionRequest = new PositionVoltage(0).withSlot(0);
+m_velocityRequest = new VelocityVoltage(0).withSlot(0);
 
 // get status signals
-positionSignal = motor.getPosition();
-velocitySignal = motor.getVelocity();
-voltageSignal = motor.getMotorVoltage();
-statorCurrentSignal = motor.getStatorCurrent();
-temperatureSignal = motor.getDeviceTemp();
+positionSignal = m_motor.getPosition();
+velocitySignal = m_motor.getVelocity();
+voltageSignal = m_motor.getMotorVoltage();
+statorCurrentSignal = m_motor.getStatorCurrent();
+temperatureSignal = m_motor.getDeviceTemp();
 
-TalonFXConfiguration config = new TalonFXConfiguration();
+TalonFXConfiguration m_motorConfig = new TalonFXConfiguration();
+CANcoderConfiguration m_canCoderConfig = new CANcoderConfiguration();
+
+m_canCoderConfig.MagnetSensor.MagnetOffset = 0; // Set magnet offset if needed
+m_canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
+// Apply CANcoder configuration
+m_canCoder.getConfigurator().apply(m_canCoderConfig);
 
 // Configure PID for slot 0
-Slot0Configs slot0 = config.Slot0;
+Slot0Configs slot0 = m_motorConfig.Slot0;
 slot0.kP = kP;
 slot0.kI = kI;
 slot0.kD = kD;
 
 
-  ClosedLoopRampsConfigs closedLoopRamps = config.ClosedLoopRamps;
+  ClosedLoopRampsConfigs closedLoopRamps = m_motorConfig.ClosedLoopRamps;
   closedLoopRamps.VoltageClosedLoopRampPeriod = closedLoopRampRate;
 
   //NOTE: closed loop ramp rate is not defined in the generator
 
 // Set current limits
-CurrentLimitsConfigs currentLimits = config.CurrentLimits;
+CurrentLimitsConfigs currentLimits = m_motorConfig.CurrentLimits;
 currentLimits.StatorCurrentLimit = statorCurrentLimit;
 currentLimits.StatorCurrentLimitEnable = enableStatorLimit;
 currentLimits.SupplyCurrentLimit = supplyCurrentLimit;
 currentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
 
 // Set soft limits
-SoftwareLimitSwitchConfigs softLimits = config.SoftwareLimitSwitch;
+SoftwareLimitSwitchConfigs softLimits = m_motorConfig.SoftwareLimitSwitch;
   softLimits.ForwardSoftLimitThreshold = forwardSoftLimit;
   softLimits.ForwardSoftLimitEnable = true;
   softLimits.ReverseSoftLimitThreshold = reverseSoftLimit;
   softLimits.ReverseSoftLimitEnable = true;
 
 // Set brake mode
-config.MotorOutput.NeutralMode = brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+m_motorConfig.MotorOutput.NeutralMode = brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+
+//set remote sensor
+
+m_motorConfig.Feedback.FeedbackRemoteSensorID = canID;
+m_motorConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
 
 // Apply gear ratio
-config.Feedback.SensorToMechanismRatio = gearRatio;
+m_motorConfig.Feedback.SensorToMechanismRatio = gearRatio;
 
 // Apply configuration
-motor.getConfigurator().apply(config);
+m_motor.getConfigurator().apply(m_motorConfig);
 
 // Reset encoder position
-motor.setPosition(0);
+m_motor.setPosition(0);
    
    // Initialize simulation
    armSim = new SingleJointedArmSim(
@@ -231,7 +245,7 @@ public double getTemperature() {
    
    
 double ffVolts = feedforward.calculate(getVelocity(), acceleration);
-motor.setControl(positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
+m_motor.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
  }
  
  /**
@@ -253,7 +267,7 @@ motor.setControl(positionRequest.withPosition(positionRotations).withFeedForward
    double velocityRotations = velocityRadPerSec / (2.0 * Math.PI);
    
    double ffVolts = feedforward.calculate(getVelocity(), acceleration);
-motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
+m_motor.setControl(m_velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
  }
  
  /**
@@ -261,7 +275,7 @@ motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward
   * @param voltage The voltage to apply
   */
  public void setVoltage(double voltage) {
-   motor.setVoltage(voltage);
+   m_motor.setVoltage(voltage);
  }
  
  /**
