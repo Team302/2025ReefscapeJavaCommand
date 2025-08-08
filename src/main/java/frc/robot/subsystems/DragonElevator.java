@@ -11,6 +11,10 @@ import edu.wpi.first.wpilibj2.command.Command;
 
 
 import com.ctre.phoenix6.hardware.TalonFX;
+
+import static edu.wpi.first.units.Units.Second;
+import static edu.wpi.first.units.Units.Seconds;
+
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.controls.PositionVoltage;
@@ -98,7 +102,7 @@ slot0.kD = kD;
 
 
   ClosedLoopRampsConfigs closedLoopRamps = config.ClosedLoopRamps;
-  closedLoopRamps.VoltageClosedLoopRampPeriod = closedLoopRampRate;
+  closedLoopRamps.VoltageClosedLoopRampPeriod = 0.25;
 
 // Set current limits
 CurrentLimitsConfigs currentLimits = config.CurrentLimits;
