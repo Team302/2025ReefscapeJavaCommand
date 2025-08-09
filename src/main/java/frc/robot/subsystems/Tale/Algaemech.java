@@ -31,7 +31,7 @@ import edu.wpi.first.wpilibj.DigitalInput;
 * Arm subsystem using TalonFXS with Minion motor
 */
 @Logged(name = "AlgaeMechSubsystem")
-public class AlgaeMech extends SubsystemBase {
+public class Algaemech extends SubsystemBase {
  // Constants
  private final int canID = 19;
  private final double gearRatio = 4;
@@ -78,7 +78,7 @@ public DigitalInput digitalInput = new DigitalInput(1);
  /**
   * Creates a new Arm Subsystem.
   */
- public AlgaeMech() {
+ public Algaemech() {
    // Initialize motor controller
    motor = new TalonFXS(canID);
 

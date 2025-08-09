@@ -31,7 +31,7 @@ import edu.wpi.first.units.measure.*;
 /**
 * Arm subsystem using TalonFX with Krakenx60 motor
 */
-@Logged(name = "ElevatorSubsystem")
+@Logged(name = "ArmSubsystem")
 public class ArmMech extends SubsystemBase {
  // Constants
  private final int canID = 17;
