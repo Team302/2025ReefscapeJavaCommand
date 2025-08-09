@@ -46,7 +46,8 @@ import edu.wpi.first.units.measure.*;
 @Logged(name = "ElevatorSubsystem")
 public class DragonElevator extends SubsystemBase {
   // Constants
-  private final int canID = 4;
+  private final int leaderCanID = 4;
+  private final int followerCanID = 5;
   private final double gearRatio = 4;
   private final double kP = 2.5;
   private final double kI = 0.35;
@@ -71,7 +72,8 @@ public class DragonElevator extends SubsystemBase {
   );
   
   // Motor controller
-  private final TalonFX m_motor;
+  private final TalonFX m_leader;
+  private final TalonFX m_follower;
   private final CANcoder m_canCoder;
 private final PositionVoltage m_positionRequest;
 private final VelocityVoltage m_velocityRequest;
@@ -91,92 +93,149 @@ private final StatusSignal<Temperature> temperatureSignal;
    */
   public DragonElevator() {
     // Initialize m_motor controller
-    m_motor = new TalonFX(canID);
-    m_canCoder = new CANcoder(canID);
+    m_leader = new TalonFX(leaderCanID);
+    m_follower = new TalonFX(followerCanID);
+    m_canCoder = new CANcoder(leaderCanID);
 
-// Create control requests
-m_positionRequest = new PositionVoltage(0).withSlot(0);
-m_velocityRequest = new VelocityVoltage(0).withSlot(0);
+  // Create control requests
+  m_positionRequest = new PositionVoltage(0).withSlot(0);
+  m_velocityRequest = new VelocityVoltage(0).withSlot(0);
 
-// get status signals
-positionSignal = m_motor.getPosition();
-velocitySignal = m_motor.getVelocity();
-voltageSignal = m_motor.getMotorVoltage();
-statorCurrentSignal = m_motor.getStatorCurrent();
-temperatureSignal = m_motor.getDeviceTemp();
+  // get status signals
+  positionSignal = m_leader.getPosition();
+  velocitySignal = m_leader.getVelocity();
+  voltageSignal = m_leader.getMotorVoltage();
+  statorCurrentSignal = m_leader.getStatorCurrent();
+  temperatureSignal = m_leader.getDeviceTemp();
 
-TalonFXConfiguration m_motorConfig = new TalonFXConfiguration();
-CANcoderConfiguration m_canCoderConfig = new CANcoderConfiguration();
+  TalonFXConfiguration m_leaderConfig = new TalonFXConfiguration();
+  TalonFXConfiguration m_followerConfig = new TalonFXConfiguration();
+  CANcoderConfiguration m_canCoderConfig = new CANcoderConfiguration();
 
-m_canCoderConfig.MagnetSensor.MagnetOffset = 0; // Set magnet offset if needed
-m_canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
-// Apply CANcoder configuration
-m_canCoder.getConfigurator().apply(m_canCoderConfig);
+  m_canCoderConfig.MagnetSensor.MagnetOffset = 0; // Set magnet offset if needed
+  m_canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
+  // Apply CANcoder configuration
+  m_canCoder.getConfigurator().apply(m_canCoderConfig);
 
-m_motorConfig.HardwareLimitSwitch.ForwardLimitEnable = true;
-m_motorConfig.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
-m_motorConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionEnable = true;
-m_motorConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionValue = forwardSoftLimit;
-m_motorConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteCANdiS1;
-m_motorConfig.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
+  m_leaderConfig.HardwareLimitSwitch.ForwardLimitEnable = true;
+  m_leaderConfig.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
+  m_leaderConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionEnable = true;
+  m_leaderConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionValue = forwardSoftLimit;
+  m_leaderConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteCANdiS1;
+  m_leaderConfig.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
 
-m_motorConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
-m_motorConfig.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
-m_motorConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionEnable = true;
-m_motorConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionValue = reverseSoftLimit;
-m_motorConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteCANdiS2;
-m_motorConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
-// Configure PID for slot 0
-Slot0Configs slot0 = m_motorConfig.Slot0;
-slot0.kP = kP;
-slot0.kI = kI;
-slot0.kD = kD;
+  m_leaderConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
+  m_leaderConfig.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
+  m_leaderConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionEnable = true;
+  m_leaderConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionValue = reverseSoftLimit;
+  m_leaderConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteCANdiS2;
+  m_leaderConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
+  // Configure PID for slot 0
+  Slot0Configs m_leaderSlot0 = m_leaderConfig.Slot0;
+  m_leaderSlot0.kP = kP;
+  m_leaderSlot0.kI = kI;
+  m_leaderSlot0.kD = kD;
 
 
-  ClosedLoopRampsConfigs closedLoopRamps = m_motorConfig.ClosedLoopRamps;
-  closedLoopRamps.VoltageClosedLoopRampPeriod = 0.25;
+    ClosedLoopRampsConfigs m_leaderClosedLoopRamps = m_leaderConfig.ClosedLoopRamps;
+    m_leaderClosedLoopRamps.VoltageClosedLoopRampPeriod = 0.25;
 
-// Set current limits
-CurrentLimitsConfigs currentLimits = m_motorConfig.CurrentLimits;
-currentLimits.StatorCurrentLimit = statorCurrentLimit;
-currentLimits.StatorCurrentLimitEnable = enableStatorLimit;
-currentLimits.SupplyCurrentLimit = supplyCurrentLimit;
-currentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
+  // Set current limits
+  CurrentLimitsConfigs m_leaderCurrentLimits = m_leaderConfig.CurrentLimits;
+  m_leaderCurrentLimits.StatorCurrentLimit = statorCurrentLimit;
+  m_leaderCurrentLimits.StatorCurrentLimitEnable = enableStatorLimit;
+  m_leaderCurrentLimits.SupplyCurrentLimit = supplyCurrentLimit;
+  m_leaderCurrentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
 
-// Set soft limits
-SoftwareLimitSwitchConfigs softLimits = m_motorConfig.SoftwareLimitSwitch;
-  softLimits.ForwardSoftLimitThreshold = forwardSoftLimit;
-  softLimits.ForwardSoftLimitEnable = true;
-  softLimits.ReverseSoftLimitThreshold = reverseSoftLimit;
-  softLimits.ReverseSoftLimitEnable = true;
+  // Set soft limits
+  SoftwareLimitSwitchConfigs m_leaderSoftLimits = m_leaderConfig.SoftwareLimitSwitch;
+    m_leaderSoftLimits.ForwardSoftLimitThreshold = forwardSoftLimit;
+    m_leaderSoftLimits.ForwardSoftLimitEnable = true;
+    m_leaderSoftLimits.ReverseSoftLimitThreshold = reverseSoftLimit;
+    m_leaderSoftLimits.ReverseSoftLimitEnable = true;
 
-// Set brake mode
-m_motorConfig.MotorOutput.NeutralMode = brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+  // Set brake mode
+  m_leaderConfig.MotorOutput.NeutralMode = brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
 
-// Apply gear ratio
-m_motorConfig.Feedback.SensorToMechanismRatio = gearRatio;
+  // Apply gear ratio
+  m_leaderConfig.Feedback.SensorToMechanismRatio = gearRatio;
 
-// Apply configuration
+  // Apply configuration
 
-//set remote sensor
+  //set remote sensor
 
-m_motorConfig.Feedback.FeedbackRemoteSensorID = canID;
-m_motorConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
-// Reset encoder position
-m_motor.setPosition(0);
+  m_leaderConfig.Feedback.FeedbackRemoteSensorID = leaderCanID;
+  m_leaderConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
+  // Reset encoder position
+  m_leader.setPosition(0);
+
+
+  //follower config
+
+  m_followerConfig.HardwareLimitSwitch.ForwardLimitEnable = true;
+  m_followerConfig.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
+  m_followerConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionEnable = true;
+  m_followerConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionValue = forwardSoftLimit;
+  m_followerConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteCANdiS1;
+  m_followerConfig.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
     
-    // Initialize simulation
-    elevatorSim = new ElevatorSim(
-      DCMotor.getKrakenX60(1), // Motor type
-      gearRatio,
-      5, // Carriage mass (kg)
-      drumRadius, // Drum radius (m)
-      0, // Min height (m)
-      1, // Max height (m)
-      true, // Simulate gravity
-      0 // Starting height (m)
-    );
+  m_followerConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
+  m_followerConfig.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
+  m_followerConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionEnable = true;
+  m_followerConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionValue = reverseSoftLimit;
+  m_followerConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteCANdiS2;
+  m_followerConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
+  // Configure PID for slot 0
+  Slot0Configs m_followerSlot0 = m_followerConfig.Slot0;
+  m_followerSlot0.kP = kP;
+  m_followerSlot0.kI = kI;
+  m_followerSlot0.kD = kD;
     
+    
+    ClosedLoopRampsConfigs m_followerClosedLoopRamps = m_followerConfig.ClosedLoopRamps;
+    m_followerClosedLoopRamps.VoltageClosedLoopRampPeriod = 0.25;
+    
+  // Set current limits
+  CurrentLimitsConfigs m_followerCurrentLimits = m_followerConfig.CurrentLimits;
+  m_followerCurrentLimits.StatorCurrentLimit = statorCurrentLimit;
+  m_followerCurrentLimits.StatorCurrentLimitEnable = enableStatorLimit;
+  m_followerCurrentLimits.SupplyCurrentLimit = supplyCurrentLimit;
+  m_followerCurrentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
+    
+  // Set soft limits
+  SoftwareLimitSwitchConfigs m_followerSoftLimits = m_leaderConfig.SoftwareLimitSwitch;
+    m_followerSoftLimits.ForwardSoftLimitThreshold = forwardSoftLimit;
+    m_followerSoftLimits.ForwardSoftLimitEnable = true;
+    m_followerSoftLimits.ReverseSoftLimitThreshold = reverseSoftLimit;
+    m_followerSoftLimits.ReverseSoftLimitEnable = true;
+    
+  // Set brake mode
+  m_followerConfig.MotorOutput.NeutralMode = brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+    
+  // Apply gear ratio
+  m_followerConfig.Feedback.SensorToMechanismRatio = gearRatio;
+    
+  // Apply configuration
+    
+  //set remote sensor
+    
+  m_followerConfig.Feedback.FeedbackRemoteSensorID = leaderCanID;
+  m_followerConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
+  // Reset encoder position
+  m_leader.setPosition(0);
+
+      // Initialize simulation
+      elevatorSim = new ElevatorSim(
+        DCMotor.getKrakenX60(2), // Motor type
+        gearRatio,
+        5, // Carriage mass (kg)
+        drumRadius, // Drum radius (m)
+        0, // Min height (m)
+        1, // Max height (m)
+        true, // Simulate gravity
+        0 // Starting height (m)
+      );
+
   }
   
   
@@ -205,8 +264,8 @@ m_motor.setPosition(0);
     double motorVelocity = elevatorSim.getVelocityMetersPerSecond() * positionToRotations;
 
     
-  m_motor.getSimState().setRawRotorPosition(motorPosition);
-  m_motor.getSimState().setRotorVelocity(motorVelocity);
+  m_leader.getSimState().setRawRotorPosition(motorPosition);
+  m_leader.getSimState().setRotorVelocity(motorVelocity);
 
   }
   
@@ -276,7 +335,7 @@ m_motor.setPosition(0);
     
     
 double ffVolts = feedforward.calculate(getVelocity(), acceleration);
-m_motor.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
+m_leader.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
   }
   
   /**
@@ -297,7 +356,7 @@ m_motor.setControl(m_positionRequest.withPosition(positionRotations).withFeedFor
     double velocityRotations = velocity / (2.0 * Math.PI * drumRadius);
     
     double ffVolts = feedforward.calculate(getVelocity(), acceleration);
-m_motor.setControl(m_velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
+m_leader.setControl(m_velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
   }
   
   /**
@@ -305,7 +364,7 @@ m_motor.setControl(m_velocityRequest.withVelocity(velocityRotations).withFeedFor
    * @param voltage The voltage to apply
    */
   public void setVoltage(double voltage) {
-    m_motor.setVoltage(voltage);
+    m_leader.setVoltage(voltage);
   }
   
   /**
