@@ -20,6 +20,7 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.ForwardLimitTypeValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -32,6 +33,10 @@ import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.ForwardLimitSourceValue;
+import com.ctre.phoenix6.signals.ForwardLimitTypeValue;
+import com.ctre.phoenix6.signals.ReverseLimitSourceValue;
+import com.ctre.phoenix6.signals.ReverseLimitTypeValue;
 import edu.wpi.first.units.measure.*;
 
 
@@ -108,6 +113,19 @@ m_canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterCloc
 // Apply CANcoder configuration
 m_canCoder.getConfigurator().apply(m_canCoderConfig);
 
+m_motorConfig.HardwareLimitSwitch.ForwardLimitEnable = true;
+m_motorConfig.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
+m_motorConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionEnable = true;
+m_motorConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionValue = forwardSoftLimit;
+m_motorConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteCANdiS1;
+m_motorConfig.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
+
+m_motorConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
+m_motorConfig.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
+m_motorConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionEnable = true;
+m_motorConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionValue = reverseSoftLimit;
+m_motorConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteCANdiS2;
+m_motorConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
 // Configure PID for slot 0
 Slot0Configs slot0 = m_motorConfig.Slot0;
 slot0.kP = kP;
