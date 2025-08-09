@@ -9,7 +9,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
 
-
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 
 import static edu.wpi.first.units.Units.Second;
@@ -19,18 +19,24 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.configs.OpenLoopRampsConfigs;
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.signals.SensorDirectionValue;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import edu.wpi.first.units.measure.*;
 
 
 /**
- * Elevator subsystem using TalonFX with Krakenx60 motor
+ * Elevator subsystem using TalonFX with Krakenx60 m_motor
  */
 @Logged(name = "ElevatorSubsystem")
 public class DragonElevator extends SubsystemBase {
@@ -60,9 +66,10 @@ public class DragonElevator extends SubsystemBase {
   );
   
   // Motor controller
-  private final TalonFX motor;
-private final PositionVoltage positionRequest;
-private final VelocityVoltage velocityRequest;
+  private final TalonFX m_motor;
+  private final CANcoder m_canCoder;
+private final PositionVoltage m_positionRequest;
+private final VelocityVoltage m_velocityRequest;
 private final StatusSignal<Angle> positionSignal;
 private final StatusSignal<AngularVelocity> velocitySignal;
 private final StatusSignal<Voltage> voltageSignal;
@@ -78,57 +85,67 @@ private final StatusSignal<Temperature> temperatureSignal;
    * Creates a new Elevator Subsystem.
    */
   public DragonElevator() {
-    // Initialize motor controller
-    motor = new TalonFX(canID);
+    // Initialize m_motor controller
+    m_motor = new TalonFX(canID);
+    m_canCoder = new CANcoder(canID);
 
 // Create control requests
-positionRequest = new PositionVoltage(0).withSlot(0);
-velocityRequest = new VelocityVoltage(0).withSlot(0);
+m_positionRequest = new PositionVoltage(0).withSlot(0);
+m_velocityRequest = new VelocityVoltage(0).withSlot(0);
 
 // get status signals
-positionSignal = motor.getPosition();
-velocitySignal = motor.getVelocity();
-voltageSignal = motor.getMotorVoltage();
-statorCurrentSignal = motor.getStatorCurrent();
-temperatureSignal = motor.getDeviceTemp();
+positionSignal = m_motor.getPosition();
+velocitySignal = m_motor.getVelocity();
+voltageSignal = m_motor.getMotorVoltage();
+statorCurrentSignal = m_motor.getStatorCurrent();
+temperatureSignal = m_motor.getDeviceTemp();
 
-TalonFXConfiguration config = new TalonFXConfiguration();
+TalonFXConfiguration m_motorConfig = new TalonFXConfiguration();
+CANcoderConfiguration m_canCoderConfig = new CANcoderConfiguration();
+
+m_canCoderConfig.MagnetSensor.MagnetOffset = 0; // Set magnet offset if needed
+m_canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
+// Apply CANcoder configuration
+m_canCoder.getConfigurator().apply(m_canCoderConfig);
 
 // Configure PID for slot 0
-Slot0Configs slot0 = config.Slot0;
+Slot0Configs slot0 = m_motorConfig.Slot0;
 slot0.kP = kP;
 slot0.kI = kI;
 slot0.kD = kD;
 
 
-  ClosedLoopRampsConfigs closedLoopRamps = config.ClosedLoopRamps;
+  ClosedLoopRampsConfigs closedLoopRamps = m_motorConfig.ClosedLoopRamps;
   closedLoopRamps.VoltageClosedLoopRampPeriod = 0.25;
 
 // Set current limits
-CurrentLimitsConfigs currentLimits = config.CurrentLimits;
+CurrentLimitsConfigs currentLimits = m_motorConfig.CurrentLimits;
 currentLimits.StatorCurrentLimit = statorCurrentLimit;
 currentLimits.StatorCurrentLimitEnable = enableStatorLimit;
 currentLimits.SupplyCurrentLimit = supplyCurrentLimit;
 currentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
 
 // Set soft limits
-SoftwareLimitSwitchConfigs softLimits = config.SoftwareLimitSwitch;
+SoftwareLimitSwitchConfigs softLimits = m_motorConfig.SoftwareLimitSwitch;
   softLimits.ForwardSoftLimitThreshold = forwardSoftLimit;
   softLimits.ForwardSoftLimitEnable = true;
   softLimits.ReverseSoftLimitThreshold = reverseSoftLimit;
   softLimits.ReverseSoftLimitEnable = true;
 
 // Set brake mode
-config.MotorOutput.NeutralMode = brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+m_motorConfig.MotorOutput.NeutralMode = brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
 
 // Apply gear ratio
-config.Feedback.SensorToMechanismRatio = gearRatio;
+m_motorConfig.Feedback.SensorToMechanismRatio = gearRatio;
 
 // Apply configuration
-motor.getConfigurator().apply(config);
 
+//set remote sensor
+
+m_motorConfig.Feedback.FeedbackRemoteSensorID = canID;
+m_motorConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
 // Reset encoder position
-motor.setPosition(0);
+m_motor.setPosition(0);
     
     // Initialize simulation
     elevatorSim = new ElevatorSim(
@@ -158,20 +175,20 @@ motor.setPosition(0);
    */
   @Override
   public void simulationPeriodic() {
-    // Set input voltage from motor controller to simulation
+    // Set input voltage from m_motor controller to simulation
     elevatorSim.setInput(getVoltage());
     
     // Update simulation by 20ms
     elevatorSim.update(0.020);
 
-    // Convert meters to motor rotations
+    // Convert meters to m_motor rotations
     double positionToRotations = (1 / (2.0 * Math.PI * drumRadius)) * gearRatio;
     double motorPosition = elevatorSim.getPositionMeters() * positionToRotations;
     double motorVelocity = elevatorSim.getVelocityMetersPerSecond() * positionToRotations;
 
     
-  motor.getSimState().setRawRotorPosition(motorPosition);
-  motor.getSimState().setRotorVelocity(motorVelocity);
+  m_motor.getSimState().setRawRotorPosition(motorPosition);
+  m_motor.getSimState().setRotorVelocity(motorVelocity);
 
   }
   
@@ -207,7 +224,7 @@ motor.setPosition(0);
   }
   
   /**
-   * Get the current motor current.
+   * Get the current m_motor current.
    * @return Motor current in amps
    */
   public double getCurrent() {
@@ -215,7 +232,7 @@ motor.setPosition(0);
   }
   
   /**
-   * Get the current motor temperature.
+   * Get the current m_motor temperature.
    * @return Motor temperature in Celsius
    */
   public double getTemperature() {
@@ -241,7 +258,7 @@ motor.setPosition(0);
     
     
 double ffVolts = feedforward.calculate(getVelocity(), acceleration);
-motor.setControl(positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
+m_motor.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
   }
   
   /**
@@ -262,15 +279,15 @@ motor.setControl(positionRequest.withPosition(positionRotations).withFeedForward
     double velocityRotations = velocity / (2.0 * Math.PI * drumRadius);
     
     double ffVolts = feedforward.calculate(getVelocity(), acceleration);
-motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
+m_motor.setControl(m_velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
   }
   
   /**
-   * Set motor voltage directly.
+   * Set m_motor voltage directly.
    * @param voltage The voltage to apply
    */
   public void setVoltage(double voltage) {
-    motor.setVoltage(voltage);
+    m_motor.setVoltage(voltage);
   }
   
   /**
