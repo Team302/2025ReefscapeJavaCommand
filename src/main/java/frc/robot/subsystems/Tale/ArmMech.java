@@ -32,7 +32,7 @@ import edu.wpi.first.units.measure.*;
 * Arm subsystem using TalonFX with Krakenx60 motor
 */
 @Logged(name = "ElevatorSubsystem")
-public class Arm extends SubsystemBase {
+public class ArmMech extends SubsystemBase {
  // Constants
  private final int canID = 17;
  private final double gearRatio = 1;
@@ -76,7 +76,7 @@ private final StatusSignal<Temperature> temperatureSignal;
  /**
   * Creates a new Arm Subsystem.
   */
- public Arm() {
+ public ArmMech() {
    // Initialize motor controller
    m_motor = new TalonFX(canID);
    m_canCoder = new CANcoder(canID);

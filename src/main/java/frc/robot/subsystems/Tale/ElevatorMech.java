@@ -45,7 +45,7 @@ import edu.wpi.first.units.measure.*;
  * Elevator subsystem using TalonFX with Krakenx60 m_motor
  */
 @Logged(name = "ElevatorSubsystem")
-public class DragonElevator extends SubsystemBase {
+public class ElevatorMech extends SubsystemBase {
   // Constants
   private final int leaderCanID = 4;
   private final int followerCanID = 5;
@@ -92,7 +92,7 @@ private final StatusSignal<Temperature> temperatureSignal;
   /**
    * Creates a new Elevator Subsystem.
    */
-  public DragonElevator() {
+  public ElevatorMech() {
     // Initialize m_motor controller
     m_leader = new TalonFX(leaderCanID);
     m_follower = new TalonFX(followerCanID);

@@ -31,7 +31,7 @@ import edu.wpi.first.wpilibj.DigitalInput;
 * Arm subsystem using TalonFXS with Minion motor
 */
 @Logged(name = "CoralMechSubsystem")
-public class Coralmech extends SubsystemBase {
+public class CoralMech extends SubsystemBase {
  // Constants
  private final int canID = 18;
  private final double gearRatio = 4;
@@ -78,7 +78,7 @@ public DigitalInput digitalInput = new DigitalInput(0);
  /**
   * Creates a new Arm Subsystem.
   */
- public Coralmech() {
+ public CoralMech() {
    // Initialize motor controller
    motor = new TalonFXS(canID);
 
