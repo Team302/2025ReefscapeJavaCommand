@@ -1,4 +1,4 @@
-package frc.robot.subsystems;
+package frc.robot.subsystems.Tale;
 
 import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -17,6 +17,7 @@ import static edu.wpi.first.units.Units.Seconds;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
@@ -167,11 +168,14 @@ private final StatusSignal<Temperature> temperatureSignal;
   m_leaderConfig.Feedback.FeedbackRemoteSensorID = leaderCanID;
   m_leaderConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
   // Reset encoder position
+  m_leader.getConfigurator().apply(m_leaderConfig);
+
   m_leader.setPosition(0);
 
-
+  //
   //follower config
-
+  //
+  
   m_followerConfig.HardwareLimitSwitch.ForwardLimitEnable = true;
   m_followerConfig.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
   m_followerConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionEnable = true;
@@ -216,13 +220,12 @@ private final StatusSignal<Temperature> temperatureSignal;
   m_followerConfig.Feedback.SensorToMechanismRatio = gearRatio;
     
   // Apply configuration
-    
-  //set remote sensor
-    
-  m_followerConfig.Feedback.FeedbackRemoteSensorID = leaderCanID;
-  m_followerConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
+    m_follower.getConfigurator().apply(m_followerConfig);
+
   // Reset encoder position
-  m_leader.setPosition(0);
+  m_follower.setPosition(0);
+    Follower m_followerControl = new Follower(leaderCanID, true);
+  m_follower.setControl(m_followerControl);
 
       // Initialize simulation
       elevatorSim = new ElevatorSim(
