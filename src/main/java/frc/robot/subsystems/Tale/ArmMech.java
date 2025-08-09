@@ -95,7 +95,7 @@ temperatureSignal = m_motor.getDeviceTemp();
 TalonFXConfiguration m_motorConfig = new TalonFXConfiguration();
 CANcoderConfiguration m_canCoderConfig = new CANcoderConfiguration();
 
-m_canCoderConfig.MagnetSensor.MagnetOffset = 0; // Set magnet offset if needed
+m_canCoderConfig.MagnetSensor.MagnetOffset = 0.446289; // Set magnet offset if needed
 m_canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
 // Apply CANcoder configuration
 m_canCoder.getConfigurator().apply(m_canCoderConfig);

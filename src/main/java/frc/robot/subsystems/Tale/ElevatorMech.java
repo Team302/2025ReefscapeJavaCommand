@@ -113,7 +113,7 @@ private final StatusSignal<Temperature> temperatureSignal;
   TalonFXConfiguration m_followerConfig = new TalonFXConfiguration();
   CANcoderConfiguration m_canCoderConfig = new CANcoderConfiguration();
 
-  m_canCoderConfig.MagnetSensor.MagnetOffset = 0; // Set magnet offset if needed
+  m_canCoderConfig.MagnetSensor.MagnetOffset = -0.11962890625; // Set magnet offset if needed
   m_canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
   // Apply CANcoder configuration
   m_canCoder.getConfigurator().apply(m_canCoderConfig);
@@ -249,7 +249,7 @@ private final StatusSignal<Temperature> temperatureSignal;
   public void periodic() {
     BaseStatusSignal.refreshAll(positionSignal, velocitySignal, voltageSignal, statorCurrentSignal, temperatureSignal);
   }
-  
+
   /**
    * Update simulation.
    */

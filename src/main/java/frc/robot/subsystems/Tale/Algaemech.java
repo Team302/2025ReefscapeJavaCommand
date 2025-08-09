@@ -70,7 +70,7 @@ private final StatusSignal<Temperature> temperatureSignal;
  // voltage 
 private DutyCycleOut m_AlgaePercentOutput = new DutyCycleOut(0);
 // Digital input
-public DigitalInput digitalInput = new DigitalInput(1);
+private DigitalInput digitalInput = new DigitalInput(1);
  
  // Simulation
  private final SingleJointedArmSim armSim;
