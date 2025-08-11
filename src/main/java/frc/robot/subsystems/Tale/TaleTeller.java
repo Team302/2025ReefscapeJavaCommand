@@ -16,9 +16,9 @@ public class TaleTeller extends SubsystemBase {
     private boolean m_algaeSensorState = false;
     private boolean m_coralOutSensorState = false;
     private boolean m_coralInSensorState = false;
-    private DigitalInput m_algaeSensor = new DigitalInput(0); // Example port, adjust as needed
-    private DigitalInput m_coralOutSensor = new DigitalInput(1); // Example port, adjust as needed
-    private DigitalInput m_coralInSensor = new DigitalInput(1); // Example port, adjust as needed
+    private DigitalInput m_algaeSensor = new DigitalInput(0);
+    private DigitalInput m_coralOutSensor = new DigitalInput(1);
+    private DigitalInput m_coralInSensor = new DigitalInput(2);
 
     public TaleTeller()
     {
