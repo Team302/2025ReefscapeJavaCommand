@@ -26,14 +26,12 @@ public class TaleTeller extends SubsystemBase {
     {
 
     }
-    public Command setSateReady()
+    public void setSateReady()
     {
-        return run(() -> 
-        {
-            m_algaeMech.setPercentOutputCommand(0);
-            m_coralMech.setPercentOutputCommand(0);
-            m_elevatorMech.setHeightCommand(0);
-            m_armMech.setAngle(90);
-        });
+        m_algaeMech.setPercentOutputCommand(0);
+        m_coralMech.setPercentOutputCommand(0);
+        m_elevatorMech.setHeightCommand(0);
+        m_armMech.setAngle(90);
+        
     }
 }
