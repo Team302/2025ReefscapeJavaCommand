@@ -124,6 +124,12 @@ public class RobotContainer {
         climber.setDefaultCommand(
             climber.stopCommand() // Default command to stop the climber when no button is pressed
         );
+
+        // tale teller
+        taleTeller.periodic(); // Call periodic method to update TaleTeller state
+        taleTeller.setDefaultCommand(
+            taleTeller.runOnce(() -> taleTeller.setSateReady())
+        );
     }
 
   /**
