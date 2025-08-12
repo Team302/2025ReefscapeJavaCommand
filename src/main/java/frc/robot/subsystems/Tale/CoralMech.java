@@ -69,11 +69,9 @@ private final StatusSignal<Temperature> temperatureSignal;
 
  // voltage 
 private DutyCycleOut m_coralPercentOutput = new DutyCycleOut(0);
-// Digital input
-public DigitalInput digitalInput = new DigitalInput(0);
  
  // Simulation
- private final SingleJointedArmSim armSim;
+//  private final SingleJointedArmSim armSim;
  
  /**
   * Creates a new Arm Subsystem.
@@ -131,16 +129,16 @@ motor.getConfigurator().apply(config);
 motor.setPosition(0);
    
    // Initialize simulation
-   armSim = new SingleJointedArmSim(
-     new DCMotor(12, 3.1, 200.46, 1.43, Units.rotationsPerMinuteToRadiansPerSecond(7200), 1), // Motor type
-     gearRatio,
-     SingleJointedArmSim.estimateMOI(armLength, 0 ), // Arm moment of inertia
-     armLength, // Arm length (m)
-     Units.degreesToRadians(0), // Min angle (rad)
-     Units.degreesToRadians(3.141592653589793), // Max angle (rad)
-     true, // Simulate gravity
-     Units.degreesToRadians(0) // Starting position (rad)
-   );
+  //  armSim = new SingleJointedArmSim(
+  //    new DCMotor(12, 3.1, 200.46, 1.43, Units.rotationsPerMinuteToRadiansPerSecond(7200), 1), // Motor type
+  //    gearRatio,
+  //    SingleJointedArmSim.estimateMOI(armLength, 0 ), // Arm moment of inertia
+  //    armLength, // Arm length (m)
+  //    Units.degreesToRadians(0), // Min angle (rad)
+  //    Units.degreesToRadians(3.141592653589793), // Max angle (rad)
+  //    true, // Simulate gravity
+  //    Units.degreesToRadians(0) // Starting position (rad)
+  //  );
  }
  
  
@@ -159,10 +157,10 @@ motor.setPosition(0);
  @Override
  public void simulationPeriodic() {
    // Set input voltage from motor controller to simulation
-   armSim.setInput(getVoltage());
+  //  armSim.setInput(getVoltage());
    
-   // Update simulation by 20ms
-   armSim.update(0.020);
+  //  // Update simulation by 20ms
+  //  armSim.update(0.020);
  }
  
  /**
@@ -211,14 +209,6 @@ public double getCurrent() {
 public double getTemperature() {
   return temperatureSignal.getValueAsDouble();
 }
-/**
- * Get the current state of the DI.
- * @return digital input state
- */
-  @Logged(name = "Angle/Radians")
-public boolean getDigitalInput() {
-  return digitalInput.get();
-}
  /**
   * Set motor voltage directly.
   * @param voltage The voltage to apply
@@ -239,7 +229,8 @@ public boolean getDigitalInput() {
   * @return The arm simulation model
   */
  public SingleJointedArmSim getSimulation() {
-   return armSim;
+  //  return armSim;
+  return null; // Simulation not implemented
  }
  
  /**
