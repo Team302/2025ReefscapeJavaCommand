@@ -20,7 +20,6 @@ import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drivetrain.CommandSwerveDrivetrain;
-import frc.robot.subsystems.Tale.TaleTeller;
 import frc.robot.subsystems.climber.*;
 
 /**
@@ -47,8 +46,6 @@ public class RobotContainer {
   private final CommandXboxController joystick = new CommandXboxController(0);
 
   public final Climber climber = new Climber();
-
-  public final TaleTeller taleTeller = new TaleTeller();
 
   public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
@@ -126,10 +123,7 @@ public class RobotContainer {
         );
 
         // tale teller
-        taleTeller.periodic(); // Call periodic method to update TaleTeller state
-        taleTeller.setDefaultCommand(
-            taleTeller.runOnce(() -> taleTeller.setSateReady())
-        );
+        
     }
 
   /**
