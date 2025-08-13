@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drivetrain.CommandSwerveDrivetrain;
 import frc.robot.subsystems.climber.*;
+import frc.robot.subsystems.Tale.*;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -45,7 +46,14 @@ public class RobotContainer {
 
   private final CommandXboxController joystick = new CommandXboxController(0);
 
-  public final Climber climber = new Climber();
+  private final Climber m_climber = new Climber();
+
+  private final AlgaeMech m_algaeMech = new AlgaeMech();
+  private final CoralMech m_coralMech = new CoralMech();
+    private final ElevatorMech m_elevatorMech = new ElevatorMech();
+    private final ArmMech m_armMech = new ArmMech();
+
+
 
   public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
@@ -88,8 +96,6 @@ public class RobotContainer {
             drivetrain.applyRequest(() -> idle).ignoringDisable(true)
         );
 
-
-
         joystick.a().whileTrue(drivetrain.applyRequest(() -> brake));
         joystick.b().whileTrue(drivetrain.applyRequest(() ->
             point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))
@@ -115,15 +121,23 @@ public class RobotContainer {
         //climberer
 
          joystick.povUp()
-             .whileTrue(climber.moveToAngleCommand(180));
+             .whileTrue(m_climber.moveToAngleCommand(180));
          joystick.povDown()
-             .whileTrue(climber.setDutyCycleCommand(.75));
-        climber.setDefaultCommand(
-            climber.stopCommand() // Default command to stop the climber when no button is pressed
-        );
+             .whileTrue(m_climber.setDutyCycleCommand(.75));
+        m_climber.setDefaultCommand(
+            m_climber.stopCommand() // Default command to stop the climber when no button is pressed
+            );
 
-        // tale teller
-        
+        // ready command group 
+
+        joystick.start()
+            .toggleOnTrue(Commands.parallel(
+                m_algaeMech.setPercentOutputCommand(0.5), // Set AlgaeMech to 50% duty cycle
+                m_coralMech.setPercentOutputCommand(0.5), // Set CoralMech to 50% duty cycle
+                m_elevatorMech.setHeightCommand(0),
+                m_armMech.setAngleCommand(90) 
+            ));
+                
     }
 
   /**
@@ -134,4 +148,6 @@ public class RobotContainer {
   public Command getAutonomousCommand() {
     return Commands.print("No autonomous command configured");
   }
+
+
 }
