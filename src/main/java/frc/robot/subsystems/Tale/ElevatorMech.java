@@ -94,9 +94,9 @@ private final StatusSignal<Temperature> temperatureSignal;
    */
   public ElevatorMech() {
     // Initialize m_motor controller
-    m_leader = new TalonFX(leaderCanID);
-    m_follower = new TalonFX(followerCanID);
-    m_canCoder = new CANcoder(leaderCanID);
+    m_leader = new TalonFX(leaderCanID,"canivore");
+    m_follower = new TalonFX(followerCanID,"canivore");
+    m_canCoder = new CANcoder(leaderCanID,"canivore");
 
   // Create control requests
   m_positionRequest = new PositionVoltage(0).withSlot(0);

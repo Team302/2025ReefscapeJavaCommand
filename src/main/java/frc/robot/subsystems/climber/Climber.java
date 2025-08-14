@@ -76,7 +76,7 @@ private final StatusSignal<Temperature> temperatureSignal;
   */
  public Climber() {
    // Initialize motor controller
-   motor = new TalonFX(canID);
+   motor = new TalonFX(canID,"canivore");
 
 // Create control requests
 positionRequest = new PositionVoltage(0).withSlot(0);

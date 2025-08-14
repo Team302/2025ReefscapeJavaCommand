@@ -78,7 +78,7 @@ private DutyCycleOut m_coralPercentOutput = new DutyCycleOut(0);
   */
  public CoralMech() {
    // Initialize motor controller
-   motor = new TalonFXS(canID);
+   motor = new TalonFXS(canID,"canivore");
 
 // Create control requests
 positionRequest = new PositionVoltage(0).withSlot(0);

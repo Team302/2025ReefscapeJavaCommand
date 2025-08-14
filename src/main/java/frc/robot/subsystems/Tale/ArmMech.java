@@ -78,8 +78,8 @@ private final StatusSignal<Temperature> temperatureSignal;
   */
  public ArmMech() {
    // Initialize motor controller
-   m_motor = new TalonFX(canID);
-   m_canCoder = new CANcoder(canID);
+   m_motor = new TalonFX(canID,"canivore");
+   m_canCoder = new CANcoder(canID,"canivore");
 
 // Create control requests
 m_positionRequest = new PositionVoltage(0).withSlot(0);

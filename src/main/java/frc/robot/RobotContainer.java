@@ -22,6 +22,7 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drivetrain.CommandSwerveDrivetrain;
 import frc.robot.subsystems.climber.*;
 import frc.robot.subsystems.Tale.*;
+import static frc.robot.util.TriggerUtil.whileTrueContinuous;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -46,7 +47,7 @@ public class RobotContainer {
 
   private final CommandXboxController joystick = new CommandXboxController(0);
 
-  private final Climber m_climber = new Climber();
+//   private final Climber m_climber = new Climber();
 
   private final AlgaeMech m_algaeMech = new AlgaeMech();
   private final CoralMech m_coralMech = new CoralMech();
@@ -120,22 +121,23 @@ public class RobotContainer {
 
         //climberer
 
-         joystick.povUp()
-             .whileTrue(m_climber.moveToAngleCommand(180));
-         joystick.povDown()
-             .whileTrue(m_climber.setDutyCycleCommand(.75));
-        m_climber.setDefaultCommand(
-            m_climber.stopCommand() // Default command to stop the climber when no button is pressed
-            );
+        //  joystick.povUp()
+        //      .whileTrue(m_climber.moveToAngleCommand(180));
+        //  joystick.povDown()
+        //      .whileTrue(m_climber.setDutyCycleCommand(.75));
+        // m_climber.setDefaultCommand(
+        //     m_climber.stopCommand() // Default command to stop the climber when no button is pressed
+        //     );
 
         // ready command group 
 
-        joystick.start()
-            .toggleOnTrue(Commands.parallel(
-                m_algaeMech.setPercentOutputCommand(0.5), // Set AlgaeMech to 50% duty cycle
-                m_coralMech.setPercentOutputCommand(0.5), // Set CoralMech to 50% duty cycle
-                m_elevatorMech.setHeightCommand(0),
-                m_armMech.setAngleCommand(90) 
+        joystick.x()
+            .whileTrueContinuous(
+                Commands.parallel(
+                m_algaeMech.setPercentOutputCommand(0.5) // Set AlgaeMech to 50% duty cycle
+                // m_coralMech.setPercentOutputCommand(0.5) // Set CoralMech to 50% duty cycle
+                // m_elevatorMech.setHeightCommand(0),
+                // m_armMech.setAngleCommand(90) 
             ));
                 
     }
