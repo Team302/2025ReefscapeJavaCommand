@@ -222,7 +222,7 @@ public double getTemperature() {
   */
   public void setDutyCycle(double percentage) {
     m_coralPercentOutput.Output = percentage;
-    motor.set(m_coralPercentOutput.Output);
+    motor.setControl(m_coralPercentOutput);
   }
     /**
   * Get the arm simulation for testing.

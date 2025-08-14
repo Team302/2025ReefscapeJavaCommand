@@ -22,7 +22,6 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drivetrain.CommandSwerveDrivetrain;
 import frc.robot.subsystems.climber.*;
 import frc.robot.subsystems.Tale.*;
-import static frc.robot.util.TriggerUtil.whileTrueContinuous;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -132,10 +131,10 @@ public class RobotContainer {
         // ready command group 
 
         joystick.x()
-            .whileTrueContinuous(
+            .whileTrue(
                 Commands.parallel(
-                m_algaeMech.setPercentOutputCommand(0.5) // Set AlgaeMech to 50% duty cycle
-                // m_coralMech.setPercentOutputCommand(0.5) // Set CoralMech to 50% duty cycle
+                m_algaeMech.setPercentOutputCommand(0.5), // Set AlgaeMech to 50% duty cycle
+                m_coralMech.setPercentOutputCommand(0.5) // Set CoralMech to 50% duty cycle
                 // m_elevatorMech.setHeightCommand(0),
                 // m_armMech.setAngleCommand(90) 
             ));

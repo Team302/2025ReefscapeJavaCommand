@@ -222,7 +222,7 @@ public double getTemperature() {
   */
   public void setDutyCycle(double percentage) {
     m_AlgaePercentOutput.Output = percentage;
-    motor.set(m_AlgaePercentOutput.Output);
+    motor.setControl(m_AlgaePercentOutput);
   }
     /**
   * Get the arm simulation for testing.
@@ -239,7 +239,8 @@ public double getTemperature() {
   * @return A command that sets the arm to the specified angle
   */
  public Command setPercentOutputCommand(double percentage) {
-   return run(() -> setDutyCycle(percentage));
+   return run(() -> setDutyCycle(percentage))
+   .finallyDo(() -> setDutyCycle(0)); // Stop the arm when the command ends
  }
  
 
