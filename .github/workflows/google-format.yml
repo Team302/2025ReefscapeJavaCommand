@@ -13,15 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Run Google Java Format
         uses: axel-op/googlejavaformat-action@v4.0.0
         with:
           args: --replace
           files: "**/*.java"
-          files-excluded: ""
           skip-commit: false
-          release-name: ""
-          github-token: ""
           commit-message: "Apply Google Java Format"
