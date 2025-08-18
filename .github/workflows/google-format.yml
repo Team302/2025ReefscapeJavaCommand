@@ -1,6 +1,5 @@
 name: Google Java Format
   # You may pin to the exact commit or the version.
-  # uses: axel-op/googlejavaformat-action@c1134ebd196c4cbffb077f9476585b0be8b6afcd
   uses: axel-op/googlejavaformat-action@v4.0.0
   with:
     # Arguments for the Google Java Format executable
