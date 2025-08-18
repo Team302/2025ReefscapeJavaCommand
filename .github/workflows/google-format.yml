@@ -1,0 +1,20 @@
+            - name: Google Java Format
+  # You may pin to the exact commit or the version.
+  # uses: axel-op/googlejavaformat-action@c1134ebd196c4cbffb077f9476585b0be8b6afcd
+  uses: axel-op/googlejavaformat-action@v4.0.0
+  with:
+    # Arguments for the Google Java Format executable
+    args: # optional, default is --replace
+    # Pattern to match the files to be formatted
+    files: # optional, default is **/*.java
+    # Pattern to match the files to be ignored by this action
+    files-excluded: # optional
+    # By default, this action commits any change made to the files. Set to "true" to skip this commit.
+    skip-commit: # optional, default is false
+    # Release name of Google Java Format to use. Examples: 1.7, v1.24.0... Leave empty to use the latest release compatible with your JDK.
+    release-name: # optional
+    # If provided, will be used to authenticate the calls to the GitHub API.
+    github-token: # optional
+    # This message will be used for commits made by this action
+    commit-message: # optional
+          
