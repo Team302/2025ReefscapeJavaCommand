@@ -1,18 +1,27 @@
 name: Google Java Format
-uses: axel-op/googlejavaformat-action@v4.0.0
-with:
-  # Arguments for the Google Java Format executable
-  args: --replace
-  # Pattern to match the files to be formatted
-  files: "**/*.java"
-  # Pattern to match the files to be ignored by this action
-  files-excluded: ""
-  # By default, this action commits any change made to the files. Set to "true" to skip this commit.
-  skip-commit: false
-  # Release name of Google Java Format to use. Examples: 1.7, v1.24.0... Leave empty to use the latest release compatible with your JDK.
-  release-name: ""
-  # If provided, will be used to authenticate the calls to the GitHub API.
-  github-token: ""
-  # This message will be used for commits made by this action
-  commit-message: "Apply Google Java Format"
-          
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run Google Java Format
+        uses: axel-op/googlejavaformat-action@v4.0.0
+        with:
+          args: --replace
+          files: "**/*.java"
+          files-excluded: ""
+          skip-commit: false
+          release-name: ""
+          github-token: ""
+          commit-message: "Apply Google Java Format"
