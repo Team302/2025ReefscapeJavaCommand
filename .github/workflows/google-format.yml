@@ -1,24 +1,15 @@
-name: Google Java Format
+name: Format
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+on: [push, pull_request]
 
 jobs:
-  format:
+
+  formatting:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run Google Java Format
-        uses: axel-op/googlejavaformat-action@v4.0.0
+      - uses: actions/checkout@v4 # v2 minimum required
+      - uses: axel-op/googlejavaformat-action@v4
         with:
-          args: --replace
-          files: "**/*.java"
-          skip-commit: false
-          commit-message: "Apply Google Java Format"
+          args: "--skip-sorting-imports --replace"
+          # Recommended if you use MacOS:
+          # github-token: ${{ secrets.GITHUB_TOKEN }}
