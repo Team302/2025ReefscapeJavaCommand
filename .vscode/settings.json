@@ -15,9 +15,9 @@
     "**/*~": true,
   },
 
-  "editor.formatOnSave": true, // Enable auto-formatting on save
-  "editor.formatOnPaste": true, // Enable auto-formatting on paste
-  "editor.defaultFormatter": "redhat.java", // Use Red Hat's Java formatter
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.defaultFormatter": "josevseb.google-java-format-for-vs-code",
   "task.saveBeforeRun": "always",
   "wpilib.autoSaveOnDeploy": true,
   "java.test.config": [
