@@ -14,6 +14,12 @@
     "**/.factorypath": true,
     "**/*~": true
   },
+
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.defaultFormatter": "josevseb.google-java-format-for-vs-code",
+  "task.saveBeforeRun": "always",
+  "wpilib.autoSaveOnDeploy": true,
   "java.test.config": [
     {
       "name": "WPIlibUnitTests",
