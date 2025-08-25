@@ -7,61 +7,61 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 
 public class NTLogger {
 
-    private final SendableChooser<LogLevel> m_logLevelChooser;
-    private LogLevel m_currentLogLevel = LogLevel.ERROR;
+  private final SendableChooser<LogLevel> m_logLevelChooser;
+  private LogLevel m_currentLogLevel = LogLevel.ERROR;
 
-    public NTLogger() {
-        m_logLevelChooser = new SendableChooser<>();
+  public NTLogger() {
+    m_logLevelChooser = new SendableChooser<>();
 
-        m_logLevelChooser.setDefaultOption("ERROR", LogLevel.ERROR);
-        m_logLevelChooser.addOption("DEBUG", LogLevel.DEBUG);
+    m_logLevelChooser.setDefaultOption("ERROR", LogLevel.ERROR);
+    m_logLevelChooser.addOption("DEBUG", LogLevel.DEBUG);
 
-        SmartDashboard.putData("Log Level Chooser", m_logLevelChooser);
+    SmartDashboard.putData("Log Level Chooser", m_logLevelChooser);
+  }
+
+  public enum LogLevel {
+    DEBUG,
+    ERROR
+  }
+
+  public void logData(LogLevel level, String group, String key, String message) {
+    // Get the selected log level from the chooser
+    m_currentLogLevel = m_logLevelChooser.getSelected();
+
+    // Log the message only if the level is equal to or higher than the selected level
+    if (level.ordinal() >= m_currentLogLevel.ordinal()) {
+      NetworkTable table = NetworkTableInstance.getDefault().getTable(group);
+      table.getEntry(key).setString(message);
     }
+  }
 
-    public enum LogLevel {
-        DEBUG,
-        ERROR
+  // Overload for int
+  public void logData(LogLevel level, String group, String key, int value) {
+    m_currentLogLevel = m_logLevelChooser.getSelected();
+
+    if (level.ordinal() >= m_currentLogLevel.ordinal()) {
+      NetworkTable table = NetworkTableInstance.getDefault().getTable(group);
+      table.getEntry(key).setNumber(value);
     }
+  }
 
-    public void logData(LogLevel level, String group, String key, String message) {
-        // Get the selected log level from the chooser
-        m_currentLogLevel = m_logLevelChooser.getSelected();
+  // Overload for double
+  public void logData(LogLevel level, String group, String key, double value) {
+    m_currentLogLevel = m_logLevelChooser.getSelected();
 
-        // Log the message only if the level is equal to or higher than the selected level
-        if (level.ordinal() >= m_currentLogLevel.ordinal()) {
-            NetworkTable table = NetworkTableInstance.getDefault().getTable(group);
-            table.getEntry(key).setString(message);
-        }
+    if (level.ordinal() >= m_currentLogLevel.ordinal()) {
+      NetworkTable table = NetworkTableInstance.getDefault().getTable(group);
+      table.getEntry(key).setNumber(value);
     }
+  }
 
-    // Overload for int
-    public void logData(LogLevel level, String group, String key, int value) {
-        m_currentLogLevel = m_logLevelChooser.getSelected();
+  // Overload for boolean
+  public void logData(LogLevel level, String group, String key, boolean value) {
+    m_currentLogLevel = m_logLevelChooser.getSelected();
 
-        if (level.ordinal() >= m_currentLogLevel.ordinal()) {
-            NetworkTable table = NetworkTableInstance.getDefault().getTable(group);
-            table.getEntry(key).setNumber(value);
-        }
+    if (level.ordinal() >= m_currentLogLevel.ordinal()) {
+      NetworkTable table = NetworkTableInstance.getDefault().getTable(group);
+      table.getEntry(key).setBoolean(value);
     }
-
-    // Overload for double
-    public void logData(LogLevel level, String group, String key, double value) {
-        m_currentLogLevel = m_logLevelChooser.getSelected();
-
-        if (level.ordinal() >= m_currentLogLevel.ordinal()) {
-            NetworkTable table = NetworkTableInstance.getDefault().getTable(group);
-            table.getEntry(key).setNumber(value);
-        }
-    }
-
-    // Overload for boolean
-    public void logData(LogLevel level, String group, String key, boolean value) {
-        m_currentLogLevel = m_logLevelChooser.getSelected();
-
-        if (level.ordinal() >= m_currentLogLevel.ordinal()) {
-            NetworkTable table = NetworkTableInstance.getDefault().getTable(group);
-            table.getEntry(key).setBoolean(value);
-        }
-    }
+  }
 }

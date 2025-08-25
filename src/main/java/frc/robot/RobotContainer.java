@@ -30,7 +30,7 @@ import frc.robot.subsystems.ExampleSubsystem;
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and trigger mappings) should be declared here.
  */
-public class RobotContainer{
+public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
 
@@ -57,7 +57,6 @@ public class RobotContainer{
   public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
   public NTLogger m_ntLogger = new NTLogger();
-
 
   // Replace with CommandPS4Controller or CommandJoystick if needed
   private final CommandXboxController m_driverController =
