@@ -15,7 +15,6 @@ public class NTLogger {
         m_logLevelChooser = new SendableChooser<>();
 
         m_logLevelChooser.setDefaultOption("ERROR", LogLevel.ERROR);
-        m_logLevelChooser.addOption("WARNING", LogLevel.WARNING);
         m_logLevelChooser.addOption("DEBUG", LogLevel.DEBUG);
 
         SmartDashboard.putData("Log Level Chooser", m_logLevelChooser);
@@ -23,7 +22,6 @@ public class NTLogger {
 
     public enum LogLevel {
         DEBUG,
-        WARNING,
         ERROR
     }
 
