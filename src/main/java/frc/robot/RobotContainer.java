@@ -100,7 +100,7 @@ public class RobotContainer {
                         -joystick.getRightX()
                             * m_maxAngularRate.in(
                                 RotationsPerSecond)) // Drive counterclockwise with negative X
-                                                     // (left)
+            // (left)
             // TODO mabey look at not having a negative here
             ));
 
