@@ -7,11 +7,10 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 
 public class NTLogger {
 
-    private static NTLogger instance;
     private final SendableChooser<LogLevel> m_logLevelChooser;
     private LogLevel m_currentLogLevel = LogLevel.ERROR;
 
-    private NTLogger() {
+    public NTLogger() {
         m_logLevelChooser = new SendableChooser<>();
 
         m_logLevelChooser.setDefaultOption("ERROR", LogLevel.ERROR);
@@ -64,12 +63,5 @@ public class NTLogger {
             NetworkTable table = NetworkTableInstance.getDefault().getTable(group);
             table.getEntry(key).setBoolean(value);
         }
-    }
-
-    public static NTLogger getInstance() {
-        if (instance == null) {
-            instance = new NTLogger();
-        }
-        return instance;
     }
 }
