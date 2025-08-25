@@ -86,7 +86,7 @@ public class Robot extends TimedRobot {
       m_autonomousCommand.cancel();
     }
 
-    NTLogger.getInstance().logData(NTLogger.LogLevel.DEBUG, "Robot", "Teleop mode initialized", true);
+    NTLogger.getInstance().logData(NTLogger.LogLevel.DEBUG, "Robot", "Mode", "Teleop initialized");
   }
 
   /** This function is called periodically during operator control. */
