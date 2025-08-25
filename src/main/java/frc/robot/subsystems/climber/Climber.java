@@ -1,29 +1,28 @@
 package frc.robot.subsystems.climber;
 
-import edu.wpi.first.epilogue.Logged;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
-import edu.wpi.first.math.controller.ArmFeedforward;
-import edu.wpi.first.math.util.Units;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj2.command.Command;
-
-
-import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.OpenLoopRampsConfigs;
+import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.controls.DutyCycleOut;
+import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.configs.Slot0Configs;
-import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
-import com.ctre.phoenix6.configs.OpenLoopRampsConfigs;
-import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
+
+import edu.wpi.first.epilogue.Logged;
+import edu.wpi.first.math.controller.ArmFeedforward;
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.*;
+import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 
 /**
@@ -34,18 +33,18 @@ public class Climber extends SubsystemBase {
  // Constants
  private final int canID = 7;
  private final double gearRatio = 1.0495;
-  private final double kP = 1;
-  private final double kI = 0;
+  private final double kP = 1.0;
+  private final double kI = 0.0;
   private final double kD = 0.08;
- private final double maxVelocity = 1; // rad/s
- private final double maxAcceleration = 1; // rad/s²
+ private final double maxVelocity = 1.0; // rad/s
+ private final double maxAcceleration = 1.0; // rad/s²
  private final boolean brakeMode = true;
  private final double forwardSoftLimit = -180; // max angle in radians
- private final double reverseSoftLimit = 0; // min angle in radians
+ private final double reverseSoftLimit = 0.0; // min angle in radians
  private final boolean enableStatorLimit = true;
- private final double statorCurrentLimit = 70;
+ private final double statorCurrentLimit = 70.0;
  private final boolean enableSupplyLimit = true;
- private final double supplyCurrentLimit = 70;
+ private final double supplyCurrentLimit = 70.0;
  private final double armLength = 1; // meters
  
  // Feedforward
