@@ -9,7 +9,7 @@ public class NTLogger {
 
     private static NTLogger instance;
     private final SendableChooser<LogLevel> m_logLevelChooser;
-    LogLevel m_currentLogLevel = LogLevel.ERROR;
+    private LogLevel m_currentLogLevel = LogLevel.ERROR;
 
     private NTLogger() {
         m_logLevelChooser = new SendableChooser<>();
