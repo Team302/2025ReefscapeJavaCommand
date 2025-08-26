@@ -1,9 +1,13 @@
 package frc.robot.subsystems.climber;
 
+import static edu.wpi.first.units.Units.Degree;
 import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Rotation;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.Meters;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -27,6 +31,7 @@ import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.units.AngularVelocityUnit;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -34,12 +39,13 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+// Removed unused or incorrect import
 
 
 /**
 * Climber subsystem using TalonFX with Krakenx60 motor
 */
-@Logged(name = "ElevatorSubsystem")
+@Logged(name = "ClimberSubsystem")
 public class Climber extends SubsystemBase {
  // Constants
  private final int canID = 7;
@@ -50,13 +56,13 @@ public class Climber extends SubsystemBase {
  private final AngularVelocity maxVelocity = RadiansPerSecond.of(1.0); // rad/s
  private final AngularAcceleration maxAcceleration = RadiansPerSecondPerSecond.of(1.0); // rad/s²
  private final boolean brakeMode = true;
- private final double forwardSoftLimit = -180; // max angle in radians
- private final double reverseSoftLimit = 0.0; // min angle in radians
+ private final Angle forwardSoftLimit = Angle.ofBaseUnits(-180, Degree); // max angle in radians (-180 degrees)
+ private final Angle reverseSoftLimit = Angle.ofBaseUnits(0, Degree); // min angle in radians (0 degrees)
  private final boolean enableStatorLimit = true;
  private final double statorCurrentLimit = 70.0;
  private final boolean enableSupplyLimit = true;
  private final double supplyCurrentLimit = 70.0;
- private final double armLength = 1; // meters
+ private final Distance armLength = Distance.ofBaseUnits(1, Meters); // meters
  
  // Feedforward
  private final ArmFeedforward feedforward = new ArmFeedforward(
@@ -116,9 +122,9 @@ currentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
 
 // Set soft limits
 SoftwareLimitSwitchConfigs softLimits = config.SoftwareLimitSwitch;
-  softLimits.ForwardSoftLimitThreshold = forwardSoftLimit;
+  softLimits.ForwardSoftLimitThreshold = forwardSoftLimit.in(Rotations);
   softLimits.ForwardSoftLimitEnable = true;
-  softLimits.ReverseSoftLimitThreshold = reverseSoftLimit;
+  softLimits.ReverseSoftLimitThreshold = reverseSoftLimit.in(Rotations);
   softLimits.ReverseSoftLimitEnable = true;
 
 // Set brake mode
@@ -137,12 +143,12 @@ motor.setPosition(0);
    armSim = new SingleJointedArmSim(
      DCMotor.getKrakenX60(1), // Motor type
      gearRatio,
-     SingleJointedArmSim.estimateMOI(armLength, 5), // Arm moment of inertia
-     armLength, // Arm length (m)
+     SingleJointedArmSim.estimateMOI(armLength.in(Meters), 5), // Arm moment of inertia
+     armLength.in(Meters), // Arm length (m)
      Units.degreesToRadians(0), // Min angle (rad)
-     Units.degreesToRadians(3.141592653589793), // Max angle (rad)
+     Units.degreesToRadians(180), // Max angle (rad)
      true, // Simulate gravity
-     Units.degreesToRadians(0) // Starting position (rad)
+     20.0 // Measurement noise standard deviation
    );
    
  }
