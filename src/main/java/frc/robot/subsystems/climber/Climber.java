@@ -1,5 +1,9 @@
 package frc.robot.subsystems.climber;
 
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
@@ -18,7 +22,13 @@ import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.units.measure.*;
+import edu.wpi.first.units.measure.AngularAcceleration;
+import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Temperature;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.Units.RadiansPerSecond;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -26,7 +36,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 
 /**
-* Arm subsystem using TalonFX with Krakenx60 motor
+* Climber subsystem using TalonFX with Krakenx60 motor
 */
 @Logged(name = "ElevatorSubsystem")
 public class Climber extends SubsystemBase {
@@ -36,8 +46,8 @@ public class Climber extends SubsystemBase {
   private final double kP = 1.0;
   private final double kI = 0.0;
   private final double kD = 0.08;
- private final double maxVelocity = 1.0; // rad/s
- private final double maxAcceleration = 1.0; // rad/s²
+ private final RadiansPerSecond maxVelocity = RadiansPerSecond.of(1.0); // rad/s
+ private final AngularAcceleration maxAcceleration = RadiansPerSecondPerSecond.of(1.0); // rad/s²
  private final boolean brakeMode = true;
  private final double forwardSoftLimit = -180; // max angle in radians
  private final double reverseSoftLimit = 0.0; // min angle in radians
@@ -71,7 +81,7 @@ private final StatusSignal<Temperature> temperatureSignal;
  private final SingleJointedArmSim armSim;
  
  /**
-  * Creates a new Arm Subsystem.
+  * Creates a new Climber Subsystem.
   */
  public Climber() {
    // Initialize motor controller
