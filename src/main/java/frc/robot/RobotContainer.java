@@ -22,6 +22,9 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drivetrain.CommandSwerveDrivetrain;
 import frc.robot.subsystems.climber.*;
 import frc.robot.subsystems.Tale.*;
+import frc.robot.commands.ExampleCommand;
+import frc.robot.generated.TunerConstants;
+import frc.robot.subsystems.CommandSwerveDrivetrain;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -46,14 +49,12 @@ public class RobotContainer {
 
   private final CommandXboxController joystick = new CommandXboxController(0);
 
-//   private final Climber m_climber = new Climber();
+  //   private final Climber m_climber = new Climber();
 
   private final AlgaeMech m_algaeMech = new AlgaeMech();
   private final CoralMech m_coralMech = new CoralMech();
-    private final ElevatorMech m_elevatorMech = new ElevatorMech();
-    private final ArmMech m_armMech = new ArmMech();
-
-
+  private final ElevatorMech m_elevatorMech = new ElevatorMech();
+  private final ArmMech m_armMech = new ArmMech();
 
   public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
@@ -78,16 +79,24 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-     // Note that X is defined as forward according to WPILib convention,
-        // and Y is defined as to the left according to WPILib convention.
-        drivetrain.setDefaultCommand(
-            // Drivetrain will execute this command periodically
-            drivetrain.applyRequest(() ->
-                drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-                    .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-                    .withRotationalRate(-joystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
-            )
-        );
+    // Note that X is defined as forward according to WPILib convention,
+    // and Y is defined as to the left according to WPILib convention.
+    drivetrain.setDefaultCommand(
+        // Drivetrain will execute this command periodically
+        drivetrain.applyRequest(
+            () ->
+                drive
+                    .withVelocityX(
+                        -joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
+                    .withVelocityY(
+                        -joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
+                    .withRotationalRate(
+                        -joystick.getRightX()
+                            * MaxAngularRate) // Drive counterclockwise with negative X (left)
+            ));
+    // Schedule `ExampleCommand` when `exampleCondition` changes to `true`
+    new Trigger(m_exampleSubsystem::exampleCondition)
+        .onTrue(new ExampleCommand(m_exampleSubsystem));
 
         // Idle while the robot is disabled. This ensures the configured
         // neutral mode is applied to the drive motors while disabled.
@@ -101,45 +110,47 @@ public class RobotContainer {
             point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))
         ));
 
-        final double m_specifiedHeading = 90.0;
-        joystick.rightBumper().whileTrue(drivetrain.applyRequest(() ->
-            point.withModuleDirection(Rotation2d.fromDegrees(m_specifiedHeading))
-        ));
+    final double m_specifiedHeading = 90.0;
+    joystick
+        .rightBumper()
+        .whileTrue(
+            drivetrain.applyRequest(
+                () -> point.withModuleDirection(Rotation2d.fromDegrees(m_specifiedHeading))));
 
-        // Run SysId routines when holding back/start and X/Y.
-        // Note that each routine should be run exactly once in a single log.
-        joystick.back().and(joystick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
-        joystick.back().and(joystick.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
-        joystick.start().and(joystick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
-        joystick.start().and(joystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
+    // Run SysId routines when holding back/start and X/Y.
+    // Note that each routine should be run exactly once in a single log.
+    joystick.back().and(joystick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
+    joystick.back().and(joystick.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
+    joystick.start().and(joystick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
+    joystick.start().and(joystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
         // reset the field-centric heading on left bumper press
         joystick.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
 
-        drivetrain.registerTelemetry(logger::telemeterize);
+    drivetrain.registerTelemetry(logger::telemeterize);
 
-        //climberer
+    // climberer
 
-        //  joystick.povUp()
-        //      .whileTrue(m_climber.moveToAngleCommand(180));
-        //  joystick.povDown()
-        //      .whileTrue(m_climber.setDutyCycleCommand(.75));
-        // m_climber.setDefaultCommand(
-        //     m_climber.stopCommand() // Default command to stop the climber when no button is pressed
-        //     );
+    //  joystick.povUp()
+    //      .whileTrue(m_climber.moveToAngleCommand(180));
+    //  joystick.povDown()
+    //      .whileTrue(m_climber.setDutyCycleCommand(.75));
+    // m_climber.setDefaultCommand(
+    //     m_climber.stopCommand() // Default command to stop the climber when no button is pressed
+    //     );
 
-        // ready command group 
+    // ready command group
 
-        joystick.x()
-            .whileTrue(
-                Commands.parallel(
+    joystick
+        .x()
+        .whileTrue(
+            Commands.parallel(
                 m_algaeMech.setPercentOutputCommand(0.5), // Set AlgaeMech to 50% duty cycle
                 m_coralMech.setPercentOutputCommand(0.5) // Set CoralMech to 50% duty cycle
                 // m_elevatorMech.setHeightCommand(0),
-                // m_armMech.setAngleCommand(90) 
-            ));
-                
-    }
+                // m_armMech.setAngleCommand(90)
+                ));
+  }
 
   /**
    * Use this to pass the autonomous command to the main {@link Robot} class.
@@ -149,6 +160,4 @@ public class RobotContainer {
   public Command getAutonomousCommand() {
     return Commands.print("No autonomous command configured");
   }
-
-
 }
