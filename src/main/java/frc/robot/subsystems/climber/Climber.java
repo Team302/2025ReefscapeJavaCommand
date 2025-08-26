@@ -1,5 +1,6 @@
 package frc.robot.subsystems.climber;
 
+import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
@@ -24,6 +25,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.units.AngularVelocityUnit;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
@@ -45,7 +47,7 @@ public class Climber extends SubsystemBase {
   private final double kP = 1.0;
   private final double kI = 0.0;
   private final double kD = 0.08;
- private final RadiansPerSecond maxVelocity = RadiansPerSecond.of(1.0); // rad/s
+ private final AngularVelocity maxVelocity = RadiansPerSecond.of(1.0); // rad/s
  private final AngularAcceleration maxAcceleration = RadiansPerSecondPerSecond.of(1.0); // rad/s²
  private final boolean brakeMode = true;
  private final double forwardSoftLimit = -180; // max angle in radians
@@ -292,7 +294,7 @@ motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward
    return run(() -> {
      double currentAngle = Units.rotationsToDegrees(getPosition());
      double error = angleDegrees - currentAngle;
-     double velocityDegPerSec = Math.signum(error) * Math.min(Math.abs(error) * 2.0, Units.radiansToDegrees(maxVelocity));
+     double velocityDegPerSec = Math.signum(error) * Math.min(Math.abs(error) * 2.0, maxVelocity.in(DegreesPerSecond));
      setVelocity(velocityDegPerSec);
    }).until(() -> {
      double currentAngle = Units.rotationsToDegrees(getPosition());
