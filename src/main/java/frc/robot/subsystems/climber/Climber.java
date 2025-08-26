@@ -1,6 +1,7 @@
 package frc.robot.subsystems.climber;
 
 import static edu.wpi.first.units.Units.Degree;
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
@@ -222,29 +223,6 @@ public double getTemperature() {
   return temperatureSignal.getValueAsDouble();
 }
  
- /**
-  * Set arm angle.
-  * @param angleDegrees The target angle in degrees
-  */
- public void setAngle(double angleDegrees) {
-   setAngle(angleDegrees, 0);
- }
- 
- /**
-  * Set arm angle with acceleration.
-  * @param angleDegrees The target angle in degrees
-  * @param acceleration The acceleration in rad/s²
-  */
- public void setAngle(double angleDegrees, double acceleration) 
- {
-   // Convert degrees to rotations
-   double angleRadians = Units.degreesToRadians(angleDegrees);
-   double positionRotations = angleRadians / (2.0 * Math.PI);
-   
-  double ffVolts = feedforward.calculate(getVelocity(), acceleration);
-  motor.setControl(positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
- }
- 
 /**
  * Set arm duty cycle.
  * @param percentage
@@ -258,8 +236,8 @@ public double getTemperature() {
   * Set arm angular velocity.
   * @param velocityDegPerSec The target velocity in degrees per second
   */
- public void setVelocity(double velocityDegPerSec) {
-   setVelocity(velocityDegPerSec, 0);
+ public void setVelocity(AngularVelocity velocityDegPerSec) {
+   setVelocity(velocityDegPerSec.in(DegreesPerSecond), 0);
  }
  
  /**
@@ -284,29 +262,20 @@ motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward
  }
  
  /**
-  * Creates a command to set the arm to a specific angle.
-  * @param angleDegrees The target angle in degrees
-  * @return A command that sets the arm to the specified angle
-  */
- public Command setAngleCommand(double angleDegrees) {
-   return runOnce(() -> setAngle(angleDegrees));
- }
- 
- /**
   * Creates a command to move the arm to a specific angle with a profile.
-  * @param angleDegrees The target angle in degrees
+  * @param angle The target angle in degrees
   * @return A command that moves the arm to the specified angle
   */
- public Command moveToAngleCommand(double angleDegrees) {
+ public Command moveToAngleCommand(Angle angle) {
    return run(() -> {
-     double currentAngle = Units.rotationsToDegrees(getPosition());
-     double error = angleDegrees - currentAngle;
-     double velocityDegPerSec = Math.signum(error) * Math.min(Math.abs(error) * 2.0, maxVelocity.in(DegreesPerSecond));
+     Angle currentAngle = Angle.ofBaseUnits(getPosition(), Rotations);
+     Angle error = Angle.ofBaseUnits(angle.in(Rotations) - currentAngle.in(Rotations), Rotations) ;
+     AngularVelocity velocityDegPerSec = AngularVelocity.ofBaseUnits((Math.signum(error.in(Degrees)) * Math.min(Math.abs(error.in(Degrees)) * 2.0, maxVelocity.in(DegreesPerSecond))), RotationsPerSecond);
      setVelocity(velocityDegPerSec);
    }).until(() -> {
-     double currentAngle = Units.rotationsToDegrees(getPosition());
-     return Math.abs(angleDegrees - currentAngle) < 2.0; // 2 degree tolerance
-   }).finallyDo((interrupted) -> setVelocity(0));}
+    Angle currentAngle = Angle.ofBaseUnits(getPosition(), Rotations);
+    return Math.abs(angle.in(Degrees) - currentAngle.in(Degrees)) < 2.0; // 2 degree tolerance
+   }).finallyDo((interrupted) -> setVelocity(AngularVelocity.ofBaseUnits(0, RotationsPerSecond)));}
 
    /**
     * Creates a command to set a duty cycle for the arm.
@@ -322,6 +291,6 @@ motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward
   * @return A command that stops the arm
   */
  public Command stopCommand() {
-   return runOnce(() -> setVelocity(0));
+   return runOnce(() -> setVelocity(AngularVelocity.ofBaseUnits(0, RotationsPerSecond)));
  }
 }

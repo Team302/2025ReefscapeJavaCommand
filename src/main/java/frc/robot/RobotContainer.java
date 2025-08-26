@@ -13,14 +13,17 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
+import edu.wpi.first.units.measure.Angle;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.climber.Climber;
 import frc.robot.subsystems.drivetrain.CommandSwerveDrivetrain;
 
+
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.Degrees;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -112,7 +115,7 @@ public class RobotContainer {
         //climber
 
          joystick.povUp()
-             .whileTrue(climber.moveToAngleCommand(180));
+             .whileTrue(climber.moveToAngleCommand(Angle.ofBaseUnits(180, Degrees)));
          joystick.povDown()
              .whileTrue(climber.setDutyCycleCommand(.75));
         climber.setDefaultCommand(
