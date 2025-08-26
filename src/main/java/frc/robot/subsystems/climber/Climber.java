@@ -8,6 +8,7 @@ import static edu.wpi.first.units.Units.Rotation;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.Amps;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -59,9 +60,9 @@ public class Climber extends SubsystemBase {
  private final Angle forwardSoftLimit = Angle.ofBaseUnits(-180, Degree); // max angle in radians (-180 degrees)
  private final Angle reverseSoftLimit = Angle.ofBaseUnits(0, Degree); // min angle in radians (0 degrees)
  private final boolean enableStatorLimit = true;
- private final double statorCurrentLimit = 70.0;
+ private final Current statorCurrentLimit = Current.ofBaseUnits(70, Amps);
  private final boolean enableSupplyLimit = true;
- private final double supplyCurrentLimit = 70.0;
+ private final Current supplyCurrentLimit = Current.ofBaseUnits(70, Amps);
  private final Distance armLength = Distance.ofBaseUnits(1, Meters); // meters
  
  // Feedforward
@@ -115,9 +116,9 @@ slot0.kD = kD;
 
 // Set current limits
 CurrentLimitsConfigs currentLimits = config.CurrentLimits;
-currentLimits.StatorCurrentLimit = statorCurrentLimit;
+currentLimits.StatorCurrentLimit = statorCurrentLimit.baseUnitMagnitude();
 currentLimits.StatorCurrentLimitEnable = enableStatorLimit;
-currentLimits.SupplyCurrentLimit = supplyCurrentLimit;
+currentLimits.SupplyCurrentLimit = supplyCurrentLimit.baseUnitMagnitude();
 currentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
 
 // Set soft limits
