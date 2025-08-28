@@ -1,38 +1,33 @@
 package frc.robot.subsystems.Tale;
 
-import edu.wpi.first.epilogue.Logged;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj.simulation.ElevatorSim;
-import edu.wpi.first.math.controller.ElevatorFeedforward;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.wpilibj2.command.Command;
-
-import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.hardware.TalonFX;
+import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.MetersPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
-import com.ctre.phoenix6.signals.ForwardLimitTypeValue;
-import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.ctre.phoenix6.signals.SensorDirectionValue;
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.configs.Slot0Configs;
-import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
-import com.ctre.phoenix6.configs.CANcoderConfiguration;
-import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
-import com.ctre.phoenix6.configs.CANcoderConfiguration;
-import com.ctre.phoenix6.signals.SensorDirectionValue;
+import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.ForwardLimitSourceValue;
 import com.ctre.phoenix6.signals.ForwardLimitTypeValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.ReverseLimitSourceValue;
 import com.ctre.phoenix6.signals.ReverseLimitTypeValue;
+import edu.wpi.first.epilogue.Logged;
+import edu.wpi.first.math.controller.ElevatorFeedforward;
+import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.*;
+import edu.wpi.first.wpilibj.simulation.ElevatorSim;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 /** Elevator subsystem using TalonFX with Krakenx60 m_motor */
 @Logged(name = "ElevatorSubsystem")
@@ -40,20 +35,22 @@ public class ElevatorMech extends SubsystemBase {
   // Constants
   private final int leaderCanID = 4;
   private final int followerCanID = 5;
-  private final double gearRatio = 4;
-  private final double kP = 2.5;
-  private final double kI = 0.35;
-  private final double kD = 0;
-  private final double maxVelocity = 2.5; // meters per second
-  private final double maxAcceleration = 5; // meters per second squared
+  private final double gearRatio = 4; // Gear ratio
+  private final Voltage kP = Voltage.ofBaseUnits(2.5, Volts);
+  private final Voltage kI = Voltage.ofBaseUnits(0.35, Volts);
+  private final Voltage kD = Voltage.ofBaseUnits(0, Volts);
+  private final LinearVelocity maxVelocity = MetersPerSecond.of(2.5); // meters per second
+  private final LinearAcceleration maxAcceleration =
+      MetersPerSecondPerSecond.of(5); // meters per second squared
   private final boolean brakeMode = true;
-  private final double forwardSoftLimit = 30; // max angle in meters
-  private final double reverseSoftLimit = 0; // min angle in meters
+  private final Distance forwardSoftLimit =
+      Distance.ofBaseUnits(30, Meters); // max height in meters
+  private final Distance reverseSoftLimit = Distance.ofBaseUnits(0, Meters); // min height in meters
   private final boolean enableStatorLimit = true;
-  private final int statorCurrentLimit = 120;
+  private final Current statorCurrentLimit = Current.ofBaseUnits(120, Amps);
   private final boolean enableSupplyLimit = true;
-  private final double supplyCurrentLimit = 70;
-  private final double drumRadius = 0.0254; // meters
+  private final Current supplyCurrentLimit = Current.ofBaseUnits(70, Amps);
+  private final Distance drumRadius = Distance.ofBaseUnits(0.0254, Meters); // meters
 
   // Feedforward
   private final ElevatorFeedforward feedforward =
@@ -97,123 +94,60 @@ public class ElevatorMech extends SubsystemBase {
     statorCurrentSignal = m_leader.getStatorCurrent();
     temperatureSignal = m_leader.getDeviceTemp();
 
+    // Configure leader motor
     TalonFXConfiguration m_leaderConfig = new TalonFXConfiguration();
+
+    // Set remote sensor
+    m_leaderConfig.Feedback.FeedbackRemoteSensorID = leaderCanID;
+    m_leaderConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
+
+    // Reset encoder position
+    m_leader.getConfigurator().apply(m_leaderConfig);
+    m_leader.setPosition(0);
+
+    // Configure follower motor
     TalonFXConfiguration m_followerConfig = new TalonFXConfiguration();
-    CANcoderConfiguration m_canCoderConfig = new CANcoderConfiguration();
 
-    m_canCoderConfig.MagnetSensor.MagnetOffset = -0.11962890625; // Set magnet offset if needed
-    m_canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
-    // Apply CANcoder configuration
-    m_canCoder.getConfigurator().apply(m_canCoderConfig);
+    // Set forward limit
+    m_followerConfig.HardwareLimitSwitch.ForwardLimitEnable = true;
+    m_followerConfig.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
+    m_followerConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionEnable = true;
+    m_followerConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionValue =
+        forwardSoftLimit.in(Meters); // Convert to base units
+    m_followerConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteCANdiS1;
+    m_followerConfig.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
 
-    m_leaderConfig.HardwareLimitSwitch.ForwardLimitEnable = true;
-    m_leaderConfig.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
-    m_leaderConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionEnable = true;
-    m_leaderConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionValue = forwardSoftLimit;
-    m_leaderConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteCANdiS1;
-    m_leaderConfig.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
+    // Set reverse limit
+    m_followerConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
+    m_followerConfig.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
+    m_followerConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionEnable = true;
+    m_followerConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionValue =
+        reverseSoftLimit.in(Meters); // Convert to base units
+    m_followerConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteCANdiS2;
+    m_followerConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
 
-    m_leaderConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
-    m_leaderConfig.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
-    m_leaderConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionEnable = true;
-    m_leaderConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionValue = reverseSoftLimit;
-    m_leaderConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteCANdiS2;
-    m_leaderConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
     // Configure PID for slot 0
-    Slot0Configs m_leaderSlot0 = m_leaderConfig.Slot0;
-    m_leaderSlot0.kP = kP;
-    m_leaderSlot0.kI = kI;
-    m_leaderSlot0.kD = kD;
-
-    ClosedLoopRampsConfigs m_leaderClosedLoopRamps = m_leaderConfig.ClosedLoopRamps;
-    m_leaderClosedLoopRamps.VoltageClosedLoopRampPeriod = 0.25;
+    Slot0Configs slot0 = m_leaderConfig.Slot0;
+    slot0.kP = kP.in(Volts); // Convert to base units
+    slot0.kI = kI.in(Volts); // Convert to base units
+    slot0.kD = kD.in(Volts); // Convert to base units
 
     // Set current limits
-    CurrentLimitsConfigs m_leaderCurrentLimits = m_leaderConfig.CurrentLimits;
-    m_leaderCurrentLimits.StatorCurrentLimit = statorCurrentLimit;
-    m_leaderCurrentLimits.StatorCurrentLimitEnable = enableStatorLimit;
-    m_leaderCurrentLimits.SupplyCurrentLimit = supplyCurrentLimit;
-    m_leaderCurrentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
+    CurrentLimitsConfigs currentLimits = m_leaderConfig.CurrentLimits;
+    currentLimits.StatorCurrentLimit = statorCurrentLimit.in(Amps); // Convert to base units
+    currentLimits.StatorCurrentLimitEnable = enableStatorLimit;
+    currentLimits.SupplyCurrentLimit = supplyCurrentLimit.in(Amps); // Convert to base units
+    currentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
 
-    // Set soft limits
-    SoftwareLimitSwitchConfigs m_leaderSoftLimits = m_leaderConfig.SoftwareLimitSwitch;
-    m_leaderSoftLimits.ForwardSoftLimitThreshold = forwardSoftLimit;
-    m_leaderSoftLimits.ForwardSoftLimitEnable = true;
-    m_leaderSoftLimits.ReverseSoftLimitThreshold = reverseSoftLimit;
-    m_leaderSoftLimits.ReverseSoftLimitEnable = true;
+    // Apply follower configuration
+    m_follower.getConfigurator().apply(m_followerConfig);
 
     // Set brake mode
     m_leaderConfig.MotorOutput.NeutralMode =
         brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
 
-    // Apply gear ratio
-    m_leaderConfig.Feedback.SensorToMechanismRatio = gearRatio;
-
-    // Apply configuration
-
-    // set remote sensor
-
-    m_leaderConfig.Feedback.FeedbackRemoteSensorID = leaderCanID;
-    m_leaderConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
-    // Reset encoder position
+    // Apply leader configuration
     m_leader.getConfigurator().apply(m_leaderConfig);
-
-    m_leader.setPosition(0);
-
-    //
-    // follower config
-    //
-
-    m_followerConfig.HardwareLimitSwitch.ForwardLimitEnable = true;
-    m_followerConfig.HardwareLimitSwitch.ForwardLimitRemoteSensorID = 1;
-    m_followerConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionEnable = true;
-    m_followerConfig.HardwareLimitSwitch.ForwardLimitAutosetPositionValue = forwardSoftLimit;
-    m_followerConfig.HardwareLimitSwitch.ForwardLimitSource = ForwardLimitSourceValue.RemoteCANdiS1;
-    m_followerConfig.HardwareLimitSwitch.ForwardLimitType = ForwardLimitTypeValue.NormallyOpen;
-
-    m_followerConfig.HardwareLimitSwitch.ReverseLimitEnable = true;
-    m_followerConfig.HardwareLimitSwitch.ReverseLimitRemoteSensorID = 1;
-    m_followerConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionEnable = true;
-    m_followerConfig.HardwareLimitSwitch.ReverseLimitAutosetPositionValue = reverseSoftLimit;
-    m_followerConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteCANdiS2;
-    m_followerConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
-    // Configure PID for slot 0
-    Slot0Configs m_followerSlot0 = m_followerConfig.Slot0;
-    m_followerSlot0.kP = kP;
-    m_followerSlot0.kI = kI;
-    m_followerSlot0.kD = kD;
-
-    ClosedLoopRampsConfigs m_followerClosedLoopRamps = m_followerConfig.ClosedLoopRamps;
-    m_followerClosedLoopRamps.VoltageClosedLoopRampPeriod = 0.25;
-
-    // Set current limits
-    CurrentLimitsConfigs m_followerCurrentLimits = m_followerConfig.CurrentLimits;
-    m_followerCurrentLimits.StatorCurrentLimit = statorCurrentLimit;
-    m_followerCurrentLimits.StatorCurrentLimitEnable = enableStatorLimit;
-    m_followerCurrentLimits.SupplyCurrentLimit = supplyCurrentLimit;
-    m_followerCurrentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
-
-    // Set soft limits
-    SoftwareLimitSwitchConfigs m_followerSoftLimits = m_leaderConfig.SoftwareLimitSwitch;
-    m_followerSoftLimits.ForwardSoftLimitThreshold = forwardSoftLimit;
-    m_followerSoftLimits.ForwardSoftLimitEnable = true;
-    m_followerSoftLimits.ReverseSoftLimitThreshold = reverseSoftLimit;
-    m_followerSoftLimits.ReverseSoftLimitEnable = true;
-
-    // Set brake mode
-    m_followerConfig.MotorOutput.NeutralMode =
-        brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
-
-    // Apply gear ratio
-    m_followerConfig.Feedback.SensorToMechanismRatio = gearRatio;
-
-    // Apply configuration
-    m_follower.getConfigurator().apply(m_followerConfig);
-
-    // Reset encoder position
-    m_follower.setPosition(0);
-    Follower m_followerControl = new Follower(leaderCanID, true);
-    m_follower.setControl(m_followerControl);
 
     // Initialize simulation
     elevatorSim =
@@ -221,7 +155,7 @@ public class ElevatorMech extends SubsystemBase {
             DCMotor.getKrakenX60(2), // Motor type
             gearRatio,
             5, // Carriage mass (kg)
-            drumRadius, // Drum radius (m)
+            drumRadius.in(Meters), // Drum radius (m)
             0, // Min height (m)
             1, // Max height (m)
             true, // Simulate gravity
@@ -246,7 +180,7 @@ public class ElevatorMech extends SubsystemBase {
     elevatorSim.update(0.020);
 
     // Convert meters to m_motor rotations
-    double positionToRotations = (1 / (2.0 * Math.PI * drumRadius)) * gearRatio;
+    double positionToRotations = (1 / (2.0 * Math.PI * drumRadius.in(Meters))) * gearRatio;
     double motorPosition = elevatorSim.getPositionMeters() * positionToRotations;
     double motorVelocity = elevatorSim.getVelocityMetersPerSecond() * positionToRotations;
 
@@ -320,7 +254,7 @@ public class ElevatorMech extends SubsystemBase {
    */
   public void setPosition(double position, double acceleration) {
     // Convert meters to rotations
-    double positionRotations = position / (2.0 * Math.PI * drumRadius);
+    double positionRotations = position / (2.0 * Math.PI * drumRadius.in(Meters));
 
     double ffVolts = feedforward.calculate(getVelocity(), acceleration);
     m_leader.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
@@ -343,7 +277,7 @@ public class ElevatorMech extends SubsystemBase {
    */
   public void setVelocity(double velocity, double acceleration) {
     // Convert meters/sec to rotations/sec
-    double velocityRotations = velocity / (2.0 * Math.PI * drumRadius);
+    double velocityRotations = velocity / (2.0 * Math.PI * drumRadius.in(Meters));
 
     double ffVolts = feedforward.calculate(getVelocity(), acceleration);
     m_leader.setControl(m_velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
@@ -378,21 +312,29 @@ public class ElevatorMech extends SubsystemBase {
   }
 
   /**
-   * Creates a command to move the elevator to a specific height with a profile.
+   * Creates a command to move the elevator to a specified height.
    *
    * @param heightMeters The target height in meters
    * @return A command that moves the elevator to the specified height
    */
   public Command moveToHeightCommand(double heightMeters) {
     return run(() -> {
-          double currentHeight = getPosition() * (2.0 * Math.PI * drumRadius);
+          double currentHeight =
+              getPosition()
+                  * (2.0 * Math.PI * drumRadius.in(Meters)); // Convert drumRadius to meters
           double error = heightMeters - currentHeight;
-          double velocity = Math.signum(error) * Math.min(Math.abs(error) * 2.0, maxVelocity);
+          double velocity =
+              Math.signum(error)
+                  * Math.min(
+                      Math.abs(error) * 2.0,
+                      maxVelocity.in(MetersPerSecond)); // Convert maxVelocity to meters per second
           setVelocity(velocity);
         })
         .until(
             () -> {
-              double currentHeight = getPosition() * (2.0 * Math.PI * drumRadius);
+              double currentHeight =
+                  getPosition()
+                      * (2.0 * Math.PI * drumRadius.in(Meters)); // Convert drumRadius to meters
               return Math.abs(heightMeters - currentHeight) < 0.02; // 2cm tolerance
             });
   }

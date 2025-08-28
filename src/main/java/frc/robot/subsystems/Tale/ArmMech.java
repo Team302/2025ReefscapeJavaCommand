@@ -1,50 +1,57 @@
 package frc.robot.subsystems.Tale;
 
-import edu.wpi.first.epilogue.Logged;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
-import edu.wpi.first.math.controller.ArmFeedforward;
-import edu.wpi.first.math.util.Units;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.wpilibj2.command.Command;
+import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Seconds;
+import static edu.wpi.first.units.Units.Volts;
 
-import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.configs.CANcoderConfiguration;
-import com.ctre.phoenix6.configs.Slot0Configs;
-import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
-import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
+import edu.wpi.first.epilogue.Logged;
+import edu.wpi.first.math.controller.ArmFeedforward;
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.*;
+import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 /** Arm subsystem using TalonFX with Krakenx60 motor */
 @Logged(name = "ArmSubsystem")
 public class ArmMech extends SubsystemBase {
   // Constants
   private final int canID = 17;
-  private final double gearRatio = 1;
-  private final double kP = 57;
-  private final double kI = 25;
-  private final double kD = 0;
-  private final double maxVelocity = 1; // rad/s
-  private final double maxAcceleration = 1; // rad/s²
-  private final double closedLoopRampRate = 0.25; // seconds to full speed
+  private final double gearRatio = 1; // Gear ratio
+  private final Voltage kP = Voltage.ofBaseUnits(57, Volts);
+  private final Voltage kI = Voltage.ofBaseUnits(25, Volts);
+  private final Voltage kD = Voltage.ofBaseUnits(0, Volts);
+  private final AngularVelocity maxVelocity = RadiansPerSecond.of(1); // rad/s
+  private final AngularAcceleration maxAcceleration = RadiansPerSecondPerSecond.of(1); // rad/s²
+  private final Time closedLoopRampRate = Time.ofBaseUnits(0.25, Seconds); // seconds to full speed
   private final boolean brakeMode = true;
-  private final double forwardSoftLimit = 89; // max angle in radians
-  private final double reverseSoftLimit = -30; // min angle in radians
+  private final Angle forwardSoftLimit = Angle.ofBaseUnits(89, Degrees); // max angle in degrees
+  private final Angle reverseSoftLimit = Angle.ofBaseUnits(-30, Degrees); // min angle in degrees
   private final boolean enableStatorLimit = true;
-  private final double statorCurrentLimit = 120;
+  private final Current statorCurrentLimit = Current.ofBaseUnits(120, Amps);
   private final boolean enableSupplyLimit = true;
-  private final double supplyCurrentLimit = 70;
-  private final double armLength = 1; // meters
+  private final Current supplyCurrentLimit = Current.ofBaseUnits(70, Amps);
+  private final Distance armLength = Distance.ofBaseUnits(1, Meters); // meters
 
   // Feedforward
   private final ArmFeedforward feedforward =
@@ -79,57 +86,49 @@ public class ArmMech extends SubsystemBase {
     m_positionRequest = new PositionVoltage(0).withSlot(0);
     m_velocityRequest = new VelocityVoltage(0).withSlot(0);
 
-    // get status signals
+    // Get status signals
     positionSignal = m_motor.getPosition();
     velocitySignal = m_motor.getVelocity();
     voltageSignal = m_motor.getMotorVoltage();
     statorCurrentSignal = m_motor.getStatorCurrent();
     temperatureSignal = m_motor.getDeviceTemp();
 
+    // Configure motor
     TalonFXConfiguration m_motorConfig = new TalonFXConfiguration();
     CANcoderConfiguration m_canCoderConfig = new CANcoderConfiguration();
 
     m_canCoderConfig.MagnetSensor.MagnetOffset = 0.446289; // Set magnet offset if needed
     m_canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
-    // Apply CANcoder configuration
     m_canCoder.getConfigurator().apply(m_canCoderConfig);
 
     // Configure PID for slot 0
     Slot0Configs slot0 = m_motorConfig.Slot0;
-    slot0.kP = kP;
-    slot0.kI = kI;
-    slot0.kD = kD;
+    slot0.kP = kP.in(Volts); // Convert to base units
+    slot0.kI = kI.in(Volts); // Convert to base units
+    slot0.kD = kD.in(Volts); // Convert to base units
 
+    // Configure closed-loop ramp rate
     ClosedLoopRampsConfigs closedLoopRamps = m_motorConfig.ClosedLoopRamps;
-    closedLoopRamps.VoltageClosedLoopRampPeriod = closedLoopRampRate;
-
-    // NOTE: closed loop ramp rate is not defined in the generator
+    closedLoopRamps.VoltageClosedLoopRampPeriod =
+        closedLoopRampRate.in(Seconds); // Convert to base units
 
     // Set current limits
     CurrentLimitsConfigs currentLimits = m_motorConfig.CurrentLimits;
-    currentLimits.StatorCurrentLimit = statorCurrentLimit;
+    currentLimits.StatorCurrentLimit = statorCurrentLimit.in(Amps); // Convert to base units
     currentLimits.StatorCurrentLimitEnable = enableStatorLimit;
-    currentLimits.SupplyCurrentLimit = supplyCurrentLimit;
+    currentLimits.SupplyCurrentLimit = supplyCurrentLimit.in(Amps); // Convert to base units
     currentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
 
     // Set soft limits
     SoftwareLimitSwitchConfigs softLimits = m_motorConfig.SoftwareLimitSwitch;
-    softLimits.ForwardSoftLimitThreshold = forwardSoftLimit;
+    softLimits.ForwardSoftLimitThreshold = forwardSoftLimit.in(Radians); // Convert to base units
     softLimits.ForwardSoftLimitEnable = true;
-    softLimits.ReverseSoftLimitThreshold = reverseSoftLimit;
+    softLimits.ReverseSoftLimitThreshold = reverseSoftLimit.in(Radians); // Convert to base units
     softLimits.ReverseSoftLimitEnable = true;
 
     // Set brake mode
     m_motorConfig.MotorOutput.NeutralMode =
         brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
-
-    // set remote sensor
-
-    m_motorConfig.Feedback.FeedbackRemoteSensorID = canID;
-    m_motorConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
-
-    // Apply gear ratio
-    m_motorConfig.Feedback.SensorToMechanismRatio = gearRatio;
 
     // Apply configuration
     m_motor.getConfigurator().apply(m_motorConfig);
@@ -141,13 +140,13 @@ public class ArmMech extends SubsystemBase {
     armSim =
         new SingleJointedArmSim(
             DCMotor.getKrakenX60(1), // Motor type
-            gearRatio,
-            SingleJointedArmSim.estimateMOI(armLength, 4.53592), // Arm moment of inertia
-            armLength, // Arm length (m)
-            Units.degreesToRadians(-0.5235987755982988), // Min angle (rad)
-            Units.degreesToRadians(1.5533430342749535), // Max angle (rad)
+            gearRatio, // Gear ratio
+            SingleJointedArmSim.estimateMOI(armLength.in(Meters), 4.53592), // Arm moment of inertia
+            armLength.in(Meters), // Arm length (m)
+            reverseSoftLimit.in(Radians), // Min angle (rad)
+            forwardSoftLimit.in(Radians), // Max angle (rad)
             true, // Simulate gravity
-            Units.degreesToRadians(1.5184364492350666) // Starting position (rad)
+            Angle.ofBaseUnits(87, Degrees).in(Radians) // Starting position (rad)
             );
   }
 
@@ -307,7 +306,9 @@ public class ArmMech extends SubsystemBase {
           double error = angleDegrees - currentAngle;
           double velocityDegPerSec =
               Math.signum(error)
-                  * Math.min(Math.abs(error) * 2.0, Units.radiansToDegrees(maxVelocity));
+                  * Math.min(
+                      Math.abs(error) * 2.0,
+                      Units.radiansToDegrees(maxVelocity.in(RadiansPerSecond)));
           setVelocity(velocityDegPerSec);
         })
         .until(
@@ -317,18 +318,6 @@ public class ArmMech extends SubsystemBase {
             })
         .finallyDo((interrupted) -> setVelocity(0));
   }
-
-  // original generated code
-  /* public Command moveToAngleCommand(double angleDegrees) {
-  return run(() -> {
-    double currentAngle = Units.radiansToDegrees(getPositionRadians());
-    double error = angleDegrees - currentAngle;
-    double velocityDegPerSec = Math.signum(error) * Math.min(Math.abs(error) * 2.0, Units.radiansToDegrees(maxVelocity));
-    setVelocity(velocityDegPerSec);
-  }).until(() -> {
-    double currentAngle = Units.radiansToDegrees(getPositionRadians());
-    return Math.abs(angleDegrees - currentAngle) < 2.0; // 2 degree tolerance
-  }).finallyDo((interrupted) -> setVelocity(0));} */
 
   /**
    * Creates a command to stop the arm.

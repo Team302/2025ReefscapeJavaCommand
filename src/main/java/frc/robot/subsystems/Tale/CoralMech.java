@@ -1,44 +1,50 @@
 package frc.robot.subsystems.Tale;
 
-import edu.wpi.first.epilogue.Logged;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
-import edu.wpi.first.math.controller.ArmFeedforward;
-import edu.wpi.first.wpilibj2.command.Command;
+import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Volts;
 
-import com.ctre.phoenix6.hardware.TalonFXS;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
+import com.ctre.phoenix6.configs.TalonFXSConfiguration;
+import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.controls.DutyCycleOut;
+import com.ctre.phoenix6.hardware.TalonFXS;
 import com.ctre.phoenix6.signals.MotorArrangementValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.ctre.phoenix6.configs.TalonFXSConfiguration;
-import com.ctre.phoenix6.configs.Slot0Configs;
-import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
+import edu.wpi.first.epilogue.Logged;
+import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.units.measure.*;
+import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 /** Arm subsystem using TalonFXS with Minion motor */
 @Logged(name = "CoralMechSubsystem")
 public class CoralMech extends SubsystemBase {
   // Constants
   private final int canID = 18;
-  private final double gearRatio = 4;
-  private final double kP = 0;
-  private final double kI = 0;
-  private final double kD = 0;
-  private final double maxVelocity = 1; // rad/s
-  private final double maxAcceleration = 1; // rad/s²
+  private final double gearRatio = 4; // Gear ratio
+  private final Voltage kP = Voltage.ofBaseUnits(0, Volts);
+  private final Voltage kI = Voltage.ofBaseUnits(0, Volts);
+  private final Voltage kD = Voltage.ofBaseUnits(0, Volts);
+  private final AngularVelocity maxVelocity = RadiansPerSecond.of(1); // rad/s
+  private final AngularAcceleration maxAcceleration = RadiansPerSecondPerSecond.of(1); // rad/s²
   private final boolean brakeMode = true;
-  private final double forwardSoftLimit = 0; // max angle in radians
-  private final double reverseSoftLimit = 0; // min angle in radians
+  private final Angle forwardSoftLimit = Angle.ofBaseUnits(0, Radians); // max angle in radians
+  private final Angle reverseSoftLimit = Angle.ofBaseUnits(0, Radians); // min angle in radians
   private final boolean enableStatorLimit = true;
-  private final double statorCurrentLimit = 100;
+  private final Current statorCurrentLimit = Current.ofBaseUnits(100, Amps);
   private final boolean enableSupplyLimit = true;
-  private final double supplyCurrentLimit = 60;
-  private final double armLength = 1; // meters
+  private final Current supplyCurrentLimit = Current.ofBaseUnits(60, Amps);
+  private final Distance armLength = Distance.ofBaseUnits(1, Meters); // meters
 
   // Feedforward
   private final ArmFeedforward feedforward =
@@ -74,60 +80,45 @@ public class CoralMech extends SubsystemBase {
     positionRequest = new PositionVoltage(0).withSlot(0);
     velocityRequest = new VelocityVoltage(0).withSlot(0);
 
-    // get status signals
+    // Get status signals
     positionSignal = motor.getPosition();
     velocitySignal = motor.getVelocity();
     voltageSignal = motor.getMotorVoltage();
     statorCurrentSignal = motor.getStatorCurrent();
     temperatureSignal = motor.getDeviceTemp();
-    // Digital input getter
 
+    // Configure motor
     TalonFXSConfiguration config = new TalonFXSConfiguration();
     config.Commutation.MotorArrangement = MotorArrangementValue.Minion_JST;
 
     // Configure PID for slot 0
     Slot0Configs slot0 = config.Slot0;
-    slot0.kP = kP;
-    slot0.kI = kI;
-    slot0.kD = kD;
+    slot0.kP = kP.in(Volts); // Convert to base units
+    slot0.kI = kI.in(Volts); // Convert to base units
+    slot0.kD = kD.in(Volts); // Convert to base units
 
     // Set current limits
     CurrentLimitsConfigs currentLimits = config.CurrentLimits;
-    currentLimits.StatorCurrentLimit = statorCurrentLimit;
+    currentLimits.StatorCurrentLimit = statorCurrentLimit.in(Amps); // Convert to base units
     currentLimits.StatorCurrentLimitEnable = enableStatorLimit;
-    currentLimits.SupplyCurrentLimit = supplyCurrentLimit;
+    currentLimits.SupplyCurrentLimit = supplyCurrentLimit.in(Amps); // Convert to base units
     currentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
 
     // Set soft limits
     SoftwareLimitSwitchConfigs softLimits = config.SoftwareLimitSwitch;
-    softLimits.ForwardSoftLimitThreshold = forwardSoftLimit;
+    softLimits.ForwardSoftLimitThreshold = forwardSoftLimit.in(Radians); // Convert to base units
     softLimits.ForwardSoftLimitEnable = true;
-    softLimits.ReverseSoftLimitThreshold = reverseSoftLimit;
+    softLimits.ReverseSoftLimitThreshold = reverseSoftLimit.in(Radians); // Convert to base units
     softLimits.ReverseSoftLimitEnable = true;
 
     // Set brake mode
     config.MotorOutput.NeutralMode = brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
-
-    // Apply gear ratio
 
     // Apply configuration
     motor.getConfigurator().apply(config);
 
     // Reset encoder position
     motor.setPosition(0);
-
-    // Initialize simulation
-    //  armSim = new SingleJointedArmSim(
-    //    new DCMotor(12, 3.1, 200.46, 1.43, Units.rotationsPerMinuteToRadiansPerSecond(7200), 1),
-    // // Motor type
-    //    gearRatio,
-    //    SingleJointedArmSim.estimateMOI(armLength, 0 ), // Arm moment of inertia
-    //    armLength, // Arm length (m)
-    //    Units.degreesToRadians(0), // Min angle (rad)
-    //    Units.degreesToRadians(3.141592653589793), // Max angle (rad)
-    //    true, // Simulate gravity
-    //    Units.degreesToRadians(0) // Starting position (rad)
-    //  );
   }
 
   /** Update simulation and telemetry. */
