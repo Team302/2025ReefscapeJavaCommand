@@ -22,6 +22,8 @@ import com.ctre.phoenix6.signals.MotorArrangementValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.controller.ArmFeedforward;
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -70,7 +72,7 @@ public class AlgaeMech extends SubsystemBase {
   private DutyCycleOut m_AlgaePercentOutput = new DutyCycleOut(0);
 
   // Simulation
-  //  private final SingleJointedArmSim armSim;
+  private final SingleJointedArmSim armSim;
 
   /** Creates a new Arm Subsystem. */
   public AlgaeMech() {
@@ -123,18 +125,19 @@ public class AlgaeMech extends SubsystemBase {
     // Reset encoder position
     motor.setPosition(0);
 
-    //    // Initialize simulation
-    //    armSim = new SingleJointedArmSim(
-    //      new DCMotor(12, 3.1, 200.46, 1.43, Units.rotationsPerMinuteToRadiansPerSecond(7200), 1),
-    // // Motor type
-    //      gearRatio,
-    //      SingleJointedArmSim.estimateMOI(armLength, 0 ), // Arm moment of inertia
-    //      armLength, // Arm length (m)
-    //      Units.degreesToRadians(0), // Min angle (rad)
-    //      Units.degreesToRadians(3.141592653589793), // Max angle (rad)
-    //      true, // Simulate gravity
-    //      Units.degreesToRadians(0) // Starting position (rad)
-    //    );
+    // Initialize simulation
+    armSim =
+        new SingleJointedArmSim(
+            new DCMotor(12, 3.1, 200.46, 1.43, Units.rotationsPerMinuteToRadiansPerSecond(7200), 1),
+            // Motor type
+            gearRatio,
+            SingleJointedArmSim.estimateMOI(armLength.in(Meters), 5), // Arm moment of inertia
+            armLength.in(Meters), // Arm length (m)
+            Units.degreesToRadians(0), // Min angle (rad)
+            Units.degreesToRadians(3.141592653589793), // Max angle (rad)
+            true, // Simulate gravity
+            Units.degreesToRadians(0) // Starting position (rad)
+            );
   }
 
   /** Update simulation and telemetry. */
@@ -151,7 +154,7 @@ public class AlgaeMech extends SubsystemBase {
     //  armSim.setInput(getVoltage());
 
     //  // Update simulation by 20ms
-    //  armSim.update(0.020);
+    armSim.update(0.020);
   }
 
   /**
