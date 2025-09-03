@@ -64,7 +64,7 @@ public class RobotContainer {
 
   public NTLogger m_ntLogger = new NTLogger();
 
-  // Replace with CommandPS4Controller or Commandm_driverController if needed
+  // Replace with CommandPS4Controller or CommandXBoxController if needed
   private final CommandXboxController m_driverController =
       new CommandXboxController(OperatorConstants.kDriverControllerPort);
 
@@ -80,7 +80,7 @@ public class RobotContainer {
    * predicate, or via the named factories in {@link
    * edu.wpi.first.wpilibj2.command.button.CommandGenericHID}'s subclasses for {@link
    * CommandXboxController Xbox}/{@link edu.wpi.first.wpilibj2.command.button.CommandPS4Controller
-   * PS4} controllers or {@link edu.wpi.first.wpilibj2.command.button.Commandjoystic Flight
+   * PS4} controllers or {@link edu.wpi.first.wpilibj2.command.button.Commandjoystick Flight
    * joysticks}.
    */
   private void configureBindings() {
