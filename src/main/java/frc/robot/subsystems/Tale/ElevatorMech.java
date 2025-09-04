@@ -244,7 +244,7 @@ public class ElevatorMech extends SubsystemBase {
    * @param position The target position in meters
    */
   public void setPosition(Distance position) {
-    setPosition(position, LinearAcceleration.ofBaseUnits( 0.0, MetersPerSecondPerSecond));
+    setPosition(position, LinearAcceleration.ofBaseUnits(0.0, MetersPerSecondPerSecond));
   }
 
   /**
@@ -257,7 +257,8 @@ public class ElevatorMech extends SubsystemBase {
     // Convert meters to rotations
     double positionRotations = position.in(Meters) / (2.0 * Math.PI * drumRadius.in(Meters));
 
-    double ffVolts = feedforward.calculate(getVelocity(), acceleration.in(MetersPerSecondPerSecond));
+    double ffVolts =
+        feedforward.calculate(getVelocity(), acceleration.in(MetersPerSecondPerSecond));
     m_leader.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
   }
 

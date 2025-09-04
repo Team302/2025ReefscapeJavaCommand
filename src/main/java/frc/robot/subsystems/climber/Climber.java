@@ -29,12 +29,10 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.units.measure.Acceleration;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
-import edu.wpi.first.units.measure.Velocity;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -249,7 +247,8 @@ public class Climber extends SubsystemBase {
     double velocityRadPerSec = Units.degreesToRadians(velocityDegPerSec.in(DegreesPerSecond));
     double velocityRotations = velocityRadPerSec / (2.0 * Math.PI);
 
-    double ffVolts = feedforward.calculate(getVelocity(), acceleration.in(DegreesPerSecondPerSecond));
+    double ffVolts =
+        feedforward.calculate(getVelocity(), acceleration.in(DegreesPerSecondPerSecond));
     motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
   }
 

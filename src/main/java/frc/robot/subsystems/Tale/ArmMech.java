@@ -218,7 +218,8 @@ public class ArmMech extends SubsystemBase {
   public double getTemperature() {
     return temperatureSignal.getValueAsDouble();
   }
- /**
+
+  /**
    * Set arm angle.
    *
    * @param angleDegrees The target angle in degrees
@@ -226,7 +227,7 @@ public class ArmMech extends SubsystemBase {
   public void setAngle(Angle angleDegrees) {
     setAngle(angleDegrees);
   }
- 
+
   /**
    * Set arm angle with acceleration.
    *
@@ -238,10 +239,12 @@ public class ArmMech extends SubsystemBase {
     double angleRadians = angleDegrees.in(Radians);
     double positionRotations = angleRadians / (2.0 * Math.PI);
 
-    double ffVolts = feedforward.calculate(getVelocity(), acceleration.in(RadiansPerSecondPerSecond));
+    double ffVolts =
+        feedforward.calculate(getVelocity(), acceleration.in(RadiansPerSecondPerSecond));
     m_motor.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
   }
- /**
+
+  /**
    * Set arm angular velocity.
    *
    * @param velocityDegPerSec The target velocity in degrees per second
@@ -261,7 +264,8 @@ public class ArmMech extends SubsystemBase {
     double velocityRadPerSec = velocityDegPerSec.in(RadiansPerSecond);
     double velocityRotations = velocityRadPerSec / (2.0 * Math.PI);
 
-    double ffVolts = feedforward.calculate(getVelocity(), acceleration.in(RadiansPerSecondPerSecond));
+    double ffVolts =
+        feedforward.calculate(getVelocity(), acceleration.in(RadiansPerSecondPerSecond));
     m_motor.setControl(m_velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
   }
 
