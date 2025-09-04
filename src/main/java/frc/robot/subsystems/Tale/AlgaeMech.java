@@ -15,8 +15,6 @@ import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.configs.TalonFXSConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
-import com.ctre.phoenix6.controls.PositionVoltage;
-import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFXS;
 import com.ctre.phoenix6.signals.MotorArrangementValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -60,17 +58,11 @@ public class AlgaeMech extends SubsystemBase {
 
   // Motor controller
   private final TalonFXS motor;
-  private final PositionVoltage positionRequest;
-  private final VelocityVoltage velocityRequest;
   private final StatusSignal<Angle> positionSignal;
   private final StatusSignal<AngularVelocity> velocitySignal;
   private final StatusSignal<Voltage> voltageSignal;
   private final StatusSignal<Current> statorCurrentSignal;
   private final StatusSignal<Temperature> temperatureSignal;
-
-  // voltage
-  private DutyCycleOut m_AlgaePercentOutput = new DutyCycleOut(0);
-
   // Simulation
   private final SingleJointedArmSim armSim;
 
@@ -78,10 +70,6 @@ public class AlgaeMech extends SubsystemBase {
   public AlgaeMech() {
     // Initialize motor controller
     motor = new TalonFXS(canID, "canivore");
-
-    // Create control requests
-    positionRequest = new PositionVoltage(0).withSlot(0);
-    velocityRequest = new VelocityVoltage(0).withSlot(0);
 
     // get status signals
     positionSignal = motor.getPosition();
@@ -223,8 +211,9 @@ public class AlgaeMech extends SubsystemBase {
    * @param request The PositionVoltage request
    */
   public void setDutyCycle(double percentage) {
-    m_AlgaePercentOutput.Output = percentage;
-    motor.setControl(m_AlgaePercentOutput.withOutput(percentage));
+    DutyCycleOut algaePercentOutput = new DutyCycleOut(0);
+    algaePercentOutput.Output = percentage;
+    motor.setControl(algaePercentOutput.withOutput(percentage));
   }
 
   /**
@@ -233,8 +222,7 @@ public class AlgaeMech extends SubsystemBase {
    * @return The arm simulation model
    */
   public SingleJointedArmSim getSimulation() {
-    //  return armSim;
-    return null;
+    return armSim;
   }
 
   /**
