@@ -190,15 +190,6 @@ public class CoralMech extends SubsystemBase {
   }
 
   /**
-   * Set motor voltage directly.
-   *
-   * @param voltage The voltage to apply
-   */
-  public void setVoltage(double voltage) {
-    motor.setVoltage(voltage);
-  }
-
-  /**
    * Set motor voltage using a PositionVoltage request.
    *
    * @param request The PositionVoltage request
@@ -234,6 +225,6 @@ public class CoralMech extends SubsystemBase {
    * @return A command that stops the arm
    */
   public Command stopCommand() {
-    return runOnce(() -> setVoltage(0));
+    return runOnce(() -> setPercentOutputCommand(0));
   }
 }

@@ -2,6 +2,7 @@ package frc.robot.subsystems.Tale;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
@@ -217,38 +218,36 @@ public class ArmMech extends SubsystemBase {
   public double getTemperature() {
     return temperatureSignal.getValueAsDouble();
   }
-
-  /**
+ /**
    * Set arm angle.
    *
    * @param angleDegrees The target angle in degrees
    */
-  public void setAngle(double angleDegrees) {
-    setAngle(angleDegrees, 0);
+  public void setAngle(Angle angleDegrees) {
+    setAngle(angleDegrees);
   }
-
+ 
   /**
    * Set arm angle with acceleration.
    *
    * @param angleDegrees The target angle in degrees
    * @param acceleration The acceleration in rad/s²
    */
-  public void setAngle(double angleDegrees, double acceleration) {
+  public void setAngle(Angle angleDegrees, AngularAcceleration acceleration) {
     // Convert degrees to rotations
-    double angleRadians = Units.degreesToRadians(angleDegrees);
+    double angleRadians = angleDegrees.in(Radians);
     double positionRotations = angleRadians / (2.0 * Math.PI);
 
-    double ffVolts = feedforward.calculate(getVelocity(), acceleration);
+    double ffVolts = feedforward.calculate(getVelocity(), acceleration.in(RadiansPerSecondPerSecond));
     m_motor.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
   }
-
-  /**
+ /**
    * Set arm angular velocity.
    *
    * @param velocityDegPerSec The target velocity in degrees per second
    */
-  public void setVelocity(double velocityDegPerSec) {
-    setVelocity(velocityDegPerSec, 0);
+  public void setVelocity(AngularVelocity velocityDegPerSec) {
+    setVelocity(velocityDegPerSec, AngularAcceleration.ofBaseUnits(0, DegreesPerSecondPerSecond));
   }
 
   /**
@@ -257,12 +256,12 @@ public class ArmMech extends SubsystemBase {
    * @param velocityDegPerSec The target velocity in degrees per second
    * @param acceleration The acceleration in degrees per second squared
    */
-  public void setVelocity(double velocityDegPerSec, double acceleration) {
+  public void setVelocity(AngularVelocity velocityDegPerSec, AngularAcceleration acceleration) {
     // Convert degrees/sec to rotations/sec
-    double velocityRadPerSec = Units.degreesToRadians(velocityDegPerSec);
+    double velocityRadPerSec = velocityDegPerSec.in(RadiansPerSecond);
     double velocityRotations = velocityRadPerSec / (2.0 * Math.PI);
 
-    double ffVolts = feedforward.calculate(getVelocity(), acceleration);
+    double ffVolts = feedforward.calculate(getVelocity(), acceleration.in(RadiansPerSecondPerSecond));
     m_motor.setControl(m_velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
   }
 
@@ -271,8 +270,8 @@ public class ArmMech extends SubsystemBase {
    *
    * @param voltage The voltage to apply
    */
-  public void setVoltage(double voltage) {
-    m_motor.setVoltage(voltage);
+  public void setVoltage(Voltage voltage) {
+    m_motor.setVoltage(voltage.in(Volts));
   }
 
   /**
@@ -290,7 +289,7 @@ public class ArmMech extends SubsystemBase {
    * @param angleDegrees The target angle in degrees
    * @return A command that sets the arm to the specified angle
    */
-  public Command setAngleCommand(double angleDegrees) {
+  public Command setAngleCommand(Angle angleDegrees) {
     return runOnce(() -> setAngle(angleDegrees));
   }
 
@@ -300,10 +299,10 @@ public class ArmMech extends SubsystemBase {
    * @param angleDegrees The target angle in degrees
    * @return A command that moves the arm to the specified angle
    */
-  public Command moveToAngleCommand(double angleDegrees) {
+  public Command moveToAngleCommand(Angle angleDegrees) {
     return run(() -> {
           double currentAngle = Units.rotationsToDegrees(getPosition());
-          double error = angleDegrees - currentAngle;
+          double error = angleDegrees.in(Degrees) - currentAngle;
           double velocityDegPerSec =
               Math.signum(error)
                   * Math.min(

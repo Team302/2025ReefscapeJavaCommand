@@ -5,6 +5,7 @@ import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.MetersPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Volts;
+import static edu.wpi.first.units.Units.*;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -242,8 +243,8 @@ public class ElevatorMech extends SubsystemBase {
    *
    * @param position The target position in meters
    */
-  public void setPosition(double position) {
-    setPosition(position, 0);
+  public void setPosition(Distance position) {
+    setPosition(position, LinearAcceleration.ofBaseUnits( 0.0, MetersPerSecondPerSecond));
   }
 
   /**
@@ -252,11 +253,11 @@ public class ElevatorMech extends SubsystemBase {
    * @param position The target position in meters
    * @param acceleration The acceleration in meters per second squared
    */
-  public void setPosition(double position, double acceleration) {
+  public void setPosition(Distance position, LinearAcceleration acceleration) {
     // Convert meters to rotations
-    double positionRotations = position / (2.0 * Math.PI * drumRadius.in(Meters));
+    double positionRotations = position.in(Meters) / (2.0 * Math.PI * drumRadius.in(Meters));
 
-    double ffVolts = feedforward.calculate(getVelocity(), acceleration);
+    double ffVolts = feedforward.calculate(getVelocity(), acceleration.in(MetersPerSecondPerSecond));
     m_leader.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
   }
 
@@ -307,7 +308,7 @@ public class ElevatorMech extends SubsystemBase {
    * @param heightMeters The target height in meters
    * @return A command that sets the elevator to the specified height
    */
-  public Command setHeightCommand(double heightMeters) {
+  public Command setHeightCommand(Distance heightMeters) {
     return runOnce(() -> setPosition(heightMeters));
   }
 
