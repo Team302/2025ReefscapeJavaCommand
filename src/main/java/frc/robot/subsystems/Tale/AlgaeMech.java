@@ -105,8 +105,6 @@ public class AlgaeMech extends SubsystemBase {
     // Set brake mode
     config.MotorOutput.NeutralMode = brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
 
-    // Apply gear ratio
-
     // Apply configuration
     motor.getConfigurator().apply(config);
 

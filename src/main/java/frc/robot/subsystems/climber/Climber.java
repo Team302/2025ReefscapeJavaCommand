@@ -3,6 +3,7 @@ package frc.robot.subsystems.climber;
 import static edu.wpi.first.units.Units.Degree;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.DegreesPerSecond;
+import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
@@ -232,7 +233,7 @@ public class Climber extends SubsystemBase {
    * @param velocityDegPerSec The target velocity in degrees per second
    */
   public void setVelocity(AngularVelocity velocityDegPerSec) {
-    setVelocity(velocityDegPerSec.in(DegreesPerSecond), 0);
+    setVelocity(velocityDegPerSec, AngularAcceleration.ofBaseUnits(0, DegreesPerSecondPerSecond));
   }
 
   /**
@@ -241,12 +242,13 @@ public class Climber extends SubsystemBase {
    * @param velocityDegPerSec The target velocity in degrees per second
    * @param acceleration The acceleration in degrees per second squared
    */
-  public void setVelocity(double velocityDegPerSec, double acceleration) {
+  public void setVelocity(AngularVelocity velocityDegPerSec, AngularAcceleration acceleration) {
     // Convert degrees/sec to rotations/sec
-    double velocityRadPerSec = Units.degreesToRadians(velocityDegPerSec);
+    double velocityRadPerSec = Units.degreesToRadians(velocityDegPerSec.in(DegreesPerSecond));
     double velocityRotations = velocityRadPerSec / (2.0 * Math.PI);
 
-    double ffVolts = feedforward.calculate(getVelocity(), acceleration);
+    double ffVolts =
+        feedforward.calculate(getVelocity(), acceleration.in(DegreesPerSecondPerSecond));
     motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
   }
 
