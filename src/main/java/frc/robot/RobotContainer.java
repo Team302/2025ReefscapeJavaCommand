@@ -84,15 +84,6 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    // Schedule `ExampleCommand` when `exampleCondition` changes to `true`
-
-    // new Trigger(m_exampleSubsystem::exampleCondition)
-    //     .onTrue(new ExampleCommand(m_exampleSubsystem));
-
-    // Schedule `exampleMethodCommand` when the Xbox controller's B button is pressed,
-    // cancelling on release.
-
-    // m_driverController.b().whileTrue(m_exampleSubsystem.exampleMethodCommand());
 
     // Note that X is defined as forward according to WPILib convention,
     // and Y is defined as to the left according to WPILib convention.
@@ -127,6 +118,10 @@ public class RobotContainer {
                     point.withModuleDirection(
                         new Rotation2d(
                             -m_driverController.getLeftY(), -m_driverController.getLeftX()))));
+
+    // TODO figure out how to universally negate the joystick inputs so we don't have a -
+    // that is easily dropped. What we should probably do is wrap CommandXboxController and override
+    // the methods that return negative joystick values from what we are expecting.
 
     final double m_specifiedHeading = 90.0;
     m_driverController

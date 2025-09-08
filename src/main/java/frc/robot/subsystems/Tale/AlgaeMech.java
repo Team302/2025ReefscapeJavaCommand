@@ -139,7 +139,7 @@ public class AlgaeMech extends SubsystemBase {
   @Override
   public void simulationPeriodic() {
     // Set input voltage from motor controller to simulation
-    //  armSim.setInput(getVoltage());
+    armSim.setInput(getVoltage());
 
     //  // Update simulation by 20ms
     armSim.update(0.020);
