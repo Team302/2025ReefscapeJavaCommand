@@ -2,6 +2,7 @@ package frc.robot.subsystems.Tale;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Radians;
@@ -312,14 +313,13 @@ public class ArmMech extends SubsystemBase {
                   * Math.min(
                       Math.abs(error) * 2.0,
                       Units.radiansToDegrees(maxVelocity.in(RadiansPerSecond)));
-          setVelocity(velocityDegPerSec);
-        })
-        .until(
+          setVelocity(AngularVelocity.ofBaseUnits(velocityDegPerSec, DegreesPerSecond));
+        }).until(
             () -> {
               double currentAngle = Units.rotationsToDegrees(getPosition());
-              return Math.abs(angleDegrees - currentAngle) < 2.0; // 2 degree tolerance
+              return Math.abs(angleDegrees.in(Degrees) - currentAngle) < 2.0; // 2 degree tolerance
             })
-        .finallyDo((interrupted) -> setVelocity(0));
+        .finallyDo((interrupted) -> setVelocity(AngularVelocity.ofBaseUnits(0, DegreesPerSecond)));
   }
 
   /**
@@ -328,7 +328,7 @@ public class ArmMech extends SubsystemBase {
    * @return A command that stops the arm
    */
   public Command stopCommand() {
-    return runOnce(() -> setVelocity(0));
+    return runOnce(() -> setVelocity(AngularVelocity.ofBaseUnits(0, DegreesPerSecond)));
   }
 
   /**
@@ -338,6 +338,6 @@ public class ArmMech extends SubsystemBase {
    * @return A command that moves the arm at the specified velocity
    */
   public Command moveAtVelocityCommand(double velocityDegPerSec) {
-    return run(() -> setVelocity(velocityDegPerSec));
+    return run(() -> setVelocity(AngularVelocity.ofBaseUnits(velocityDegPerSec, DegreesPerSecond)));
   }
 }

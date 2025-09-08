@@ -41,8 +41,7 @@ public class ElevatorMech extends SubsystemBase {
   private final Voltage kI = Voltage.ofBaseUnits(0.35, Volts);
   private final Voltage kD = Voltage.ofBaseUnits(0, Volts);
   private final LinearVelocity maxVelocity = MetersPerSecond.of(2.5); // meters per second
-  private final LinearAcceleration maxAcceleration =
-      MetersPerSecondPerSecond.of(5); // meters per second squared
+  private final LinearAcceleration maxAcceleration = MetersPerSecondPerSecond.of(5); // meters per second squared
   private final boolean brakeMode = true;
   private final Distance forwardSoftLimit =
       Distance.ofBaseUnits(30, Meters); // max height in meters
