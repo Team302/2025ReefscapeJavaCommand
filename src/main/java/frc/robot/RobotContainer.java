@@ -128,6 +128,10 @@ public class RobotContainer {
                         new Rotation2d(
                             -m_driverController.getLeftY(), -m_driverController.getLeftX()))));
 
+    // TODO figure out how to universally negate the joystick inputs so we don't have a -
+    // that is easily dropped. What we should probably do is wrap CommandXboxController and override
+    // the methods that return negative joystick values from what we are expecting.
+
     final double m_specifiedHeading = 90.0;
     m_driverController
         .rightBumper()
