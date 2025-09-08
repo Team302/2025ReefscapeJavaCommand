@@ -8,8 +8,6 @@ import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 
-import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
@@ -20,8 +18,6 @@ import com.ctre.phoenix6.signals.MotorArrangementValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.controller.ArmFeedforward;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -58,25 +54,11 @@ public class AlgaeMech extends SubsystemBase {
 
   // Motor controller
   private final TalonFXS motor;
-  private final StatusSignal<Angle> positionSignal;
-  private final StatusSignal<AngularVelocity> velocitySignal;
-  private final StatusSignal<Voltage> voltageSignal;
-  private final StatusSignal<Current> statorCurrentSignal;
-  private final StatusSignal<Temperature> temperatureSignal;
-  // Simulation
-  private final SingleJointedArmSim armSim;
 
   /** Creates a new Arm Subsystem. */
   public AlgaeMech() {
     // Initialize motor controller
     motor = new TalonFXS(canID, "canivore");
-
-    // get status signals
-    positionSignal = motor.getPosition();
-    velocitySignal = motor.getVelocity();
-    voltageSignal = motor.getMotorVoltage();
-    statorCurrentSignal = motor.getStatorCurrent();
-    temperatureSignal = motor.getDeviceTemp();
     // Digital input getter
 
     TalonFXSConfiguration config = new TalonFXSConfiguration();
@@ -110,38 +92,15 @@ public class AlgaeMech extends SubsystemBase {
 
     // Reset encoder position
     motor.setPosition(0);
-
-    // Initialize simulation
-    armSim =
-        new SingleJointedArmSim(
-            new DCMotor(12, 3.1, 200.46, 1.43, Units.rotationsPerMinuteToRadiansPerSecond(7200), 1),
-            // Motor type
-            gearRatio,
-            SingleJointedArmSim.estimateMOI(armLength.in(Meters), 5), // Arm moment of inertia
-            armLength.in(Meters), // Arm length (m)
-            Units.degreesToRadians(0), // Min angle (rad)
-            Units.degreesToRadians(3.141592653589793), // Max angle (rad)
-            true, // Simulate gravity
-            Units.degreesToRadians(0) // Starting position (rad)
-            );
   }
 
   /** Update simulation and telemetry. */
   @Override
-  public void periodic() {
-    BaseStatusSignal.refreshAll(
-        positionSignal, velocitySignal, voltageSignal, statorCurrentSignal, temperatureSignal);
-  }
+  public void periodic() {}
 
   /** Update simulation. */
   @Override
-  public void simulationPeriodic() {
-    // Set input voltage from motor controller to simulation
-    armSim.setInput(getVoltage());
-
-    //  // Update simulation by 20ms
-    armSim.update(0.020);
-  }
+  public void simulationPeriodic() {}
 
   /**
    * Get the current position in the Rotations.
@@ -149,9 +108,9 @@ public class AlgaeMech extends SubsystemBase {
    * @return Position in Rotations
    */
   @Logged(name = "Position/Rotations")
-  public double getPosition() {
+  public Angle getPosition() {
     // Rotations
-    return positionSignal.getValueAsDouble();
+    return motor.getPosition().getValue();
   }
 
   /**
@@ -160,8 +119,8 @@ public class AlgaeMech extends SubsystemBase {
    * @return Velocity in rotations per second
    */
   @Logged(name = "Velocity")
-  public double getVelocity() {
-    return velocitySignal.getValueAsDouble();
+  public AngularVelocity getVelocity() {
+    return motor.getVelocity().getValue();
   }
 
   /**
@@ -170,8 +129,8 @@ public class AlgaeMech extends SubsystemBase {
    * @return Applied voltage
    */
   @Logged(name = "Voltage")
-  public double getVoltage() {
-    return voltageSignal.getValueAsDouble();
+  public Voltage getVoltage() {
+    return motor.getMotorVoltage().getValue();
   }
 
   /**
@@ -180,8 +139,8 @@ public class AlgaeMech extends SubsystemBase {
    * @return Motor current in amps
    */
   @Logged(name = "Current")
-  public double getCurrent() {
-    return statorCurrentSignal.getValueAsDouble();
+  public Current getCurrent() {
+    return motor.getSupplyCurrent().getValue();
   }
 
   /**
@@ -190,8 +149,8 @@ public class AlgaeMech extends SubsystemBase {
    * @return Motor temperature in Celsius
    */
   @Logged(name = "Temperature")
-  public double getTemperature() {
-    return temperatureSignal.getValueAsDouble();
+  public Temperature getTemperature() {
+    return motor.getDeviceTemp().getValue();
   }
 
   /**
@@ -220,7 +179,9 @@ public class AlgaeMech extends SubsystemBase {
    * @return The arm simulation model
    */
   public SingleJointedArmSim getSimulation() {
-    return armSim;
+    // return armSim;
+    return null;
+    // Simulation not implemented
   }
 
   /**

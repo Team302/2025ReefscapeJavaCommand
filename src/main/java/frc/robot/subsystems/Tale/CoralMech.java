@@ -7,8 +7,6 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
-import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
@@ -59,17 +57,9 @@ public class CoralMech extends SubsystemBase {
   private final TalonFXS motor;
   private final PositionVoltage positionRequest;
   private final VelocityVoltage velocityRequest;
-  private final StatusSignal<Angle> positionSignal;
-  private final StatusSignal<AngularVelocity> velocitySignal;
-  private final StatusSignal<Voltage> voltageSignal;
-  private final StatusSignal<Current> statorCurrentSignal;
-  private final StatusSignal<Temperature> temperatureSignal;
 
   // voltage
   private DutyCycleOut m_coralPercentOutput = new DutyCycleOut(0);
-
-  // Simulation
-  //  private final SingleJointedArmSim armSim;
 
   /** Creates a new Arm Subsystem. */
   public CoralMech() {
@@ -79,13 +69,6 @@ public class CoralMech extends SubsystemBase {
     // Create control requests
     positionRequest = new PositionVoltage(0).withSlot(0);
     velocityRequest = new VelocityVoltage(0).withSlot(0);
-
-    // Get status signals
-    positionSignal = motor.getPosition();
-    velocitySignal = motor.getVelocity();
-    voltageSignal = motor.getMotorVoltage();
-    statorCurrentSignal = motor.getStatorCurrent();
-    temperatureSignal = motor.getDeviceTemp();
 
     // Configure motor
     TalonFXSConfiguration config = new TalonFXSConfiguration();
@@ -123,20 +106,11 @@ public class CoralMech extends SubsystemBase {
 
   /** Update simulation and telemetry. */
   @Override
-  public void periodic() {
-    BaseStatusSignal.refreshAll(
-        positionSignal, velocitySignal, voltageSignal, statorCurrentSignal, temperatureSignal);
-  }
+  public void periodic() {}
 
   /** Update simulation. */
   @Override
-  public void simulationPeriodic() {
-    // Set input voltage from motor controller to simulation
-    //  armSim.setInput(getVoltage());
-
-    //  // Update simulation by 20ms
-    //  armSim.update(0.020);
-  }
+  public void simulationPeriodic() {}
 
   /**
    * Get the current position in the Rotations.
@@ -144,9 +118,9 @@ public class CoralMech extends SubsystemBase {
    * @return Position in Rotations
    */
   @Logged(name = "Position/Rotations")
-  public double getPosition() {
+  public Angle getPosition() {
     // Rotations
-    return positionSignal.getValueAsDouble();
+    return motor.getPosition().getValue();
   }
 
   /**
@@ -155,8 +129,8 @@ public class CoralMech extends SubsystemBase {
    * @return Velocity in rotations per second
    */
   @Logged(name = "Velocity")
-  public double getVelocity() {
-    return velocitySignal.getValueAsDouble();
+  public AngularVelocity getVelocity() {
+    return motor.getVelocity().getValue();
   }
 
   /**
@@ -165,8 +139,8 @@ public class CoralMech extends SubsystemBase {
    * @return Applied voltage
    */
   @Logged(name = "Voltage")
-  public double getVoltage() {
-    return voltageSignal.getValueAsDouble();
+  public Voltage getVoltage() {
+    return motor.getMotorVoltage().getValue();
   }
 
   /**
@@ -175,8 +149,8 @@ public class CoralMech extends SubsystemBase {
    * @return Motor current in amps
    */
   @Logged(name = "Current")
-  public double getCurrent() {
-    return statorCurrentSignal.getValueAsDouble();
+  public Current getCurrent() {
+    return motor.getSupplyCurrent().getValue();
   }
 
   /**
@@ -185,8 +159,8 @@ public class CoralMech extends SubsystemBase {
    * @return Motor temperature in Celsius
    */
   @Logged(name = "Temperature")
-  public double getTemperature() {
-    return temperatureSignal.getValueAsDouble();
+  public Temperature getTemperature() {
+    return motor.getDeviceTemp().getValue();
   }
 
   /**
