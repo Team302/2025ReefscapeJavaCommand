@@ -314,7 +314,8 @@ public class ArmMech extends SubsystemBase {
                       Math.abs(error) * 2.0,
                       Units.radiansToDegrees(maxVelocity.in(RadiansPerSecond)));
           setVelocity(AngularVelocity.ofBaseUnits(velocityDegPerSec, DegreesPerSecond));
-        }).until(
+        })
+        .until(
             () -> {
               double currentAngle = Units.rotationsToDegrees(getPosition());
               return Math.abs(angleDegrees.in(Degrees) - currentAngle) < 2.0; // 2 degree tolerance
