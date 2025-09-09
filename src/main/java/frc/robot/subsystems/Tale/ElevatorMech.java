@@ -4,8 +4,6 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.MetersPerSecondPerSecond;
-import static edu.wpi.first.units.Units.Inches;
-import static edu.wpi.first.units.Units.InchesPerSecond;
 
 import static edu.wpi.first.units.Units.Volts;
 import static edu.wpi.first.units.Units.*;
@@ -15,12 +13,9 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.controls.ControlRequest;
-import com.ctre.phoenix6.controls.DynamicMotionMagicVoltage;
 import com.ctre.phoenix6.controls.MotionMagicExpoVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
@@ -140,14 +135,15 @@ public class ElevatorMech extends SubsystemBase {
         reverseSoftLimit.in(Meters); // Convert to base units
     m_followerConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteCANdiS2;
     m_followerConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
-    
-// Motion Magic PID Values
+
+    // Motion Magic PID Values
     Slot0Configs slot0 = m_leaderConfig.Slot0;
 
     m_leaderConfig.Slot0.kS = kS.in(Volts); // Add 0.25 V output to overcome static friction
     m_leaderConfig.Slot0.kV = kV.in(Volts); // A velocity target of 1 rps results in 0.12 V output
     m_leaderConfig.Slot0.kA = kA.in(Volts); // An acceleration of 1 rps/s requires 0.01 V output
-    m_leaderConfig.Slot0.kP = kP.in(Volts); // A position error of 2.5 rotations results in 12 V output
+    m_leaderConfig.Slot0.kP =
+        kP.in(Volts); // A position error of 2.5 rotations results in 12 V output
     m_leaderConfig.Slot0.kI = kI.in(Volts); // no output for integrated error
     m_leaderConfig.Slot0.kD = kD.in(Volts); // A velocity error of 1 rps results in 0.1 V output
     // Configure PID for slot 0
@@ -163,17 +159,16 @@ public class ElevatorMech extends SubsystemBase {
     currentLimits.SupplyCurrentLimit = supplyCurrentLimit.in(Amps); // Convert to base units
     currentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
 
-  // set Motion Magic settings
-  var motionMagicConfigs = m_leaderConfig.MotionMagic;
-  motionMagicConfigs.MotionMagicCruiseVelocity = 75; // Target cruise velocity
-  motionMagicConfigs.MotionMagicExpo_kV = 0.08; // kV is around 0.08 V/rps
-  motionMagicConfigs.MotionMagicExpo_kA = 0.1; // Use a slower kA of 0.1 V/(rps/s)
+    // set Motion Magic settings
+    var motionMagicConfigs = m_leaderConfig.MotionMagic;
+    motionMagicConfigs.MotionMagicCruiseVelocity = 75; // Target cruise velocity
+    motionMagicConfigs.MotionMagicExpo_kV = 0.08; // kV is around 0.08 V/rps
+    motionMagicConfigs.MotionMagicExpo_kA = 0.1; // Use a slower kA of 0.1 V/(rps/s)
 
-  
-  // create a Motion Magic request, voltage output
+    // create a Motion Magic request, voltage output
 
-// set target position to 100 rotations
-m_leader.setControl(m_motionMagicRequest.withPosition(100));
+    // set target position to 100 rotations
+    m_leader.setControl(m_motionMagicRequest.withPosition(100));
 
     // Apply follower configuration
     m_follower.getConfigurator().apply(m_followerConfig);
@@ -290,13 +285,14 @@ m_leader.setControl(m_motionMagicRequest.withPosition(100));
    */
   public void setPosition(Distance position, LinearAcceleration acceleration) {
     // Convert meters to rotations
-    //double positionRotations = position.in(Meters) / (2.0 * Math.PI * drumRadius.in(Meters));
+    // double positionRotations = position.in(Meters) / (2.0 * Math.PI * drumRadius.in(Meters));
 
     double ffVolts =
         feedforward.calculate(getVelocity(), acceleration.in(MetersPerSecondPerSecond));
     // m_leader.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
-    m_leader.setControl(m_motionMagicRequest.withPosition(position.in(Meters)).withFeedForward(ffVolts));
-;
+    m_leader.setControl(
+        m_motionMagicRequest.withPosition(position.in(Meters)).withFeedForward(ffVolts));
+    ;
   }
 
   /**
