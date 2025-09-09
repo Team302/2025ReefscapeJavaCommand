@@ -163,7 +163,7 @@ public class ArmMech extends SubsystemBase {
   @Override
   public void simulationPeriodic() {
     // Set input voltage from motor controller to simulation
-    armSim.setInput(getVoltage());
+    armSim.setInput(getVoltage().in(Volts));
 
     // Update simulation by 20ms
     armSim.update(0.020);
@@ -175,9 +175,9 @@ public class ArmMech extends SubsystemBase {
    * @return Position in Rotations
    */
   @Logged(name = "Position/Rotations")
-  public double getPosition() {
+  public Angle getPosition() {
     // Rotations
-    return positionSignal.getValueAsDouble();
+    return m_motor.getPosition().getValue();
   }
 
   /**
@@ -186,8 +186,8 @@ public class ArmMech extends SubsystemBase {
    * @return Velocity in rotations per second
    */
   @Logged(name = "Velocity")
-  public double getVelocity() {
-    return velocitySignal.getValueAsDouble();
+  public AngularVelocity getVelocity() {
+    return m_motor.getVelocity().getValue();
   }
 
   /**
@@ -196,8 +196,8 @@ public class ArmMech extends SubsystemBase {
    * @return Applied voltage
    */
   @Logged(name = "Voltage")
-  public double getVoltage() {
-    return voltageSignal.getValueAsDouble();
+  public Voltage getVoltage() {
+    return m_motor.getMotorVoltage().getValue();
   }
 
   /**
@@ -206,8 +206,8 @@ public class ArmMech extends SubsystemBase {
    * @return Motor current in amps
    */
   @Logged(name = "Current")
-  public double getCurrent() {
-    return statorCurrentSignal.getValueAsDouble();
+  public Current getCurrent() {
+    return m_motor.getSupplyCurrent().getValue();
   }
 
   /**
@@ -216,8 +216,8 @@ public class ArmMech extends SubsystemBase {
    * @return Motor temperature in Celsius
    */
   @Logged(name = "Temperature")
-  public double getTemperature() {
-    return temperatureSignal.getValueAsDouble();
+  public Temperature getTemperature() {
+    return m_motor.getDeviceTemp().getValue();
   }
 
   /**
@@ -241,7 +241,8 @@ public class ArmMech extends SubsystemBase {
     double positionRotations = angleRadians / (2.0 * Math.PI);
 
     double ffVolts =
-        feedforward.calculate(getVelocity(), acceleration.in(RadiansPerSecondPerSecond));
+        feedforward.calculate(
+            getPosition().in(Radians), acceleration.in(RadiansPerSecondPerSecond));
     m_motor.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
   }
 
@@ -266,7 +267,8 @@ public class ArmMech extends SubsystemBase {
     double velocityRotations = velocityRadPerSec / (2.0 * Math.PI);
 
     double ffVolts =
-        feedforward.calculate(getVelocity(), acceleration.in(RadiansPerSecondPerSecond));
+        feedforward.calculate(
+            getPosition().in(Radians), acceleration.in(RadiansPerSecondPerSecond));
     m_motor.setControl(m_velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
   }
 
@@ -306,7 +308,7 @@ public class ArmMech extends SubsystemBase {
    */
   public Command moveToAngleCommand(Angle angleDegrees) {
     return run(() -> {
-          double currentAngle = Units.rotationsToDegrees(getPosition());
+          double currentAngle = getPosition().in(Degrees);
           double error = angleDegrees.in(Degrees) - currentAngle;
           double velocityDegPerSec =
               Math.signum(error)
@@ -317,7 +319,7 @@ public class ArmMech extends SubsystemBase {
         })
         .until(
             () -> {
-              double currentAngle = Units.rotationsToDegrees(getPosition());
+              double currentAngle = getPosition().in(Degrees);
               return Math.abs(angleDegrees.in(Degrees) - currentAngle) < 2.0; // 2 degree tolerance
             })
         .finallyDo((interrupted) -> setVelocity(AngularVelocity.ofBaseUnits(0, DegreesPerSecond)));
