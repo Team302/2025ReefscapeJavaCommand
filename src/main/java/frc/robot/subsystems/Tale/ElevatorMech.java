@@ -4,6 +4,9 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.MetersPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.InchesPerSecond;
+
 import static edu.wpi.first.units.Units.Volts;
 import static edu.wpi.first.units.Units.*;
 
@@ -12,9 +15,13 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.controls.ControlRequest;
+import com.ctre.phoenix6.controls.DynamicMotionMagicVoltage;
+import com.ctre.phoenix6.controls.MotionMagicExpoVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.ForwardLimitSourceValue;
@@ -29,6 +36,7 @@ import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import com.ctre.phoenix.*;
 
 /** Elevator subsystem using TalonFX with Krakenx60 m_motor */
 @Logged(name = "ElevatorSubsystem")
@@ -37,9 +45,13 @@ public class ElevatorMech extends SubsystemBase {
   private final int leaderCanID = 4;
   private final int followerCanID = 5;
   private final double gearRatio = 4; // Gear ratio
-  private final Voltage kP = Voltage.ofBaseUnits(2.5, Volts);
-  private final Voltage kI = Voltage.ofBaseUnits(0.35, Volts);
-  private final Voltage kD = Voltage.ofBaseUnits(0, Volts);
+  private final Voltage kP = Voltage.ofBaseUnits(2.0, Volts);
+  private final Voltage kI = Voltage.ofBaseUnits(0.0, Volts);
+  private final Voltage kD = Voltage.ofBaseUnits(0.0, Volts);
+  private final Voltage kA = Voltage.ofBaseUnits(0.0175, Volts);
+  private final Voltage kV = Voltage.ofBaseUnits(0.25, Volts);
+  private final Voltage kS = Voltage.ofBaseUnits(0.1, Volts);
+
   private final LinearVelocity maxVelocity = MetersPerSecond.of(2.5); // meters per second
   private final LinearAcceleration maxAcceleration =
       MetersPerSecondPerSecond.of(5); // meters per second squared
@@ -68,6 +80,7 @@ public class ElevatorMech extends SubsystemBase {
   private final CANcoder m_canCoder;
   private final PositionVoltage m_positionRequest;
   private final VelocityVoltage m_velocityRequest;
+  private final MotionMagicExpoVoltage m_motionMagicRequest;
   private final StatusSignal<Angle> positionSignal;
   private final StatusSignal<AngularVelocity> velocitySignal;
   private final StatusSignal<Voltage> voltageSignal;
@@ -87,6 +100,7 @@ public class ElevatorMech extends SubsystemBase {
     // Create control requests
     m_positionRequest = new PositionVoltage(0).withSlot(0);
     m_velocityRequest = new VelocityVoltage(0).withSlot(0);
+    m_motionMagicRequest = new MotionMagicExpoVoltage(0);
 
     // get status signals
     positionSignal = m_leader.getPosition();
@@ -126,12 +140,21 @@ public class ElevatorMech extends SubsystemBase {
         reverseSoftLimit.in(Meters); // Convert to base units
     m_followerConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteCANdiS2;
     m_followerConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
-
-    // Configure PID for slot 0
+    
+// Motion Magic PID Values
     Slot0Configs slot0 = m_leaderConfig.Slot0;
-    slot0.kP = kP.in(Volts); // Convert to base units
-    slot0.kI = kI.in(Volts); // Convert to base units
-    slot0.kD = kD.in(Volts); // Convert to base units
+
+    m_leaderConfig.Slot0.kS = kS.in(Volts); // Add 0.25 V output to overcome static friction
+    m_leaderConfig.Slot0.kV = kV.in(Volts); // A velocity target of 1 rps results in 0.12 V output
+    m_leaderConfig.Slot0.kA = kA.in(Volts); // An acceleration of 1 rps/s requires 0.01 V output
+    m_leaderConfig.Slot0.kP = kP.in(Volts); // A position error of 2.5 rotations results in 12 V output
+    m_leaderConfig.Slot0.kI = kI.in(Volts); // no output for integrated error
+    m_leaderConfig.Slot0.kD = kD.in(Volts); // A velocity error of 1 rps results in 0.1 V output
+    // Configure PID for slot 0
+    // Slot0Configs slot1 = m_leaderConfig.Slot0;
+    // slot0.kP = kP.in(Volts); // Convert to base units
+    // slot0.kI = kI.in(Volts); // Convert to base units
+    // slot0.kD = kD.in(Volts); // Convert to base units
 
     // Set current limits
     CurrentLimitsConfigs currentLimits = m_leaderConfig.CurrentLimits;
@@ -139,6 +162,18 @@ public class ElevatorMech extends SubsystemBase {
     currentLimits.StatorCurrentLimitEnable = enableStatorLimit;
     currentLimits.SupplyCurrentLimit = supplyCurrentLimit.in(Amps); // Convert to base units
     currentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
+
+  // set Motion Magic settings
+  var motionMagicConfigs = m_leaderConfig.MotionMagic;
+  motionMagicConfigs.MotionMagicCruiseVelocity = 75; // Target cruise velocity
+  motionMagicConfigs.MotionMagicExpo_kV = 0.08; // kV is around 0.08 V/rps
+  motionMagicConfigs.MotionMagicExpo_kA = 0.1; // Use a slower kA of 0.1 V/(rps/s)
+
+  
+  // create a Motion Magic request, voltage output
+
+// set target position to 100 rotations
+m_leader.setControl(m_motionMagicRequest.withPosition(100));
 
     // Apply follower configuration
     m_follower.getConfigurator().apply(m_followerConfig);
@@ -241,7 +276,7 @@ public class ElevatorMech extends SubsystemBase {
   /**
    * Set elevator position.
    *
-   * @param position The target position in meters
+   * @param position The target position in inches
    */
   public void setPosition(Distance position) {
     setPosition(position, LinearAcceleration.ofBaseUnits(0.0, MetersPerSecondPerSecond));
@@ -255,11 +290,13 @@ public class ElevatorMech extends SubsystemBase {
    */
   public void setPosition(Distance position, LinearAcceleration acceleration) {
     // Convert meters to rotations
-    double positionRotations = position.in(Meters) / (2.0 * Math.PI * drumRadius.in(Meters));
+    //double positionRotations = position.in(Meters) / (2.0 * Math.PI * drumRadius.in(Meters));
 
     double ffVolts =
         feedforward.calculate(getVelocity(), acceleration.in(MetersPerSecondPerSecond));
-    m_leader.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
+    // m_leader.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
+    m_leader.setControl(m_motionMagicRequest.withPosition(position.in(Meters)).withFeedForward(ffVolts));
+;
   }
 
   /**
@@ -316,15 +353,15 @@ public class ElevatorMech extends SubsystemBase {
   /**
    * Creates a command to move the elevator to a specified height.
    *
-   * @param heightMeters The target height in meters
+   * @param heightMeters The target height in Inches
    * @return A command that moves the elevator to the specified height
    */
-  public Command moveToHeightCommand(double heightMeters) {
+  public Command moveToHeightCommand(double heightInches) {
     return run(() -> {
           double currentHeight =
               getPosition()
                   * (2.0 * Math.PI * drumRadius.in(Meters)); // Convert drumRadius to meters
-          double error = heightMeters - currentHeight;
+          double error = heightInches - currentHeight;
           double velocity =
               Math.signum(error)
                   * Math.min(
@@ -337,7 +374,7 @@ public class ElevatorMech extends SubsystemBase {
               double currentHeight =
                   getPosition()
                       * (2.0 * Math.PI * drumRadius.in(Meters)); // Convert drumRadius to meters
-              return Math.abs(heightMeters - currentHeight) < 0.02; // 2cm tolerance
+              return Math.abs(heightInches - currentHeight) < 0.02; // 2cm tolerance
             });
   }
 
