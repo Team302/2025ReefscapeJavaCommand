@@ -12,8 +12,6 @@ import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.configs.TalonFXSConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
-import com.ctre.phoenix6.controls.PositionVoltage;
-import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFXS;
 import com.ctre.phoenix6.signals.MotorArrangementValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -28,24 +26,25 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 @Logged(name = "CoralMechSubsystem")
 public class CoralMech extends SubsystemBase {
   // Constants
-  private final int canID = 18;
-  private final double gearRatio = 4; // Gear ratio
-  private final Voltage kP = Voltage.ofBaseUnits(0, Volts);
-  private final Voltage kI = Voltage.ofBaseUnits(0, Volts);
-  private final Voltage kD = Voltage.ofBaseUnits(0, Volts);
-  private final AngularVelocity maxVelocity = RadiansPerSecond.of(1); // rad/s
-  private final AngularAcceleration maxAcceleration = RadiansPerSecondPerSecond.of(1); // rad/s²
-  private final boolean brakeMode = true;
-  private final Angle forwardSoftLimit = Angle.ofBaseUnits(0, Radians); // max angle in radians
-  private final Angle reverseSoftLimit = Angle.ofBaseUnits(0, Radians); // min angle in radians
-  private final boolean enableStatorLimit = true;
-  private final Current statorCurrentLimit = Current.ofBaseUnits(100, Amps);
-  private final boolean enableSupplyLimit = true;
-  private final Current supplyCurrentLimit = Current.ofBaseUnits(60, Amps);
-  private final Distance armLength = Distance.ofBaseUnits(1, Meters); // meters
+  private static final String m_canBusName = "canivore";
+  private final int m_canID = 18;
+  private final double m_gearRatio = 4; // Gear ratio
+  private final Voltage m_kP = Voltage.ofBaseUnits(0, Volts);
+  private final Voltage m_kI = Voltage.ofBaseUnits(0, Volts);
+  private final Voltage m_kD = Voltage.ofBaseUnits(0, Volts);
+  private final AngularVelocity m_maxVelocity = RadiansPerSecond.of(1); // rad/s
+  private final AngularAcceleration m_maxAcceleration = RadiansPerSecondPerSecond.of(1); // rad/s²
+  private final boolean m_brakeMode = true;
+  private final Angle m_forwardSoftLimit = Angle.ofBaseUnits(0, Radians); // max angle in radians
+  private final Angle m_reverseSoftLimit = Angle.ofBaseUnits(0, Radians); // min angle in radians
+  private final boolean m_enableStatorLimit = true;
+  private final Current m_statorCurrentLimit = Current.ofBaseUnits(100, Amps);
+  private final boolean m_enableSupplyLimit = true;
+  private final Current m_supplyCurrentLimit = Current.ofBaseUnits(60, Amps);
+  private final Distance m_armLength = Distance.ofBaseUnits(1, Meters); // meters
 
   // Feedforward
-  private final ArmFeedforward feedforward =
+  private final ArmFeedforward m_feedforward =
       new ArmFeedforward(
           0, // kS
           0, // kG
@@ -55,20 +54,13 @@ public class CoralMech extends SubsystemBase {
 
   // Motor controller
   private final TalonFXS motor;
-  private final PositionVoltage positionRequest;
-  private final VelocityVoltage velocityRequest;
-
   // voltage
   private DutyCycleOut m_coralPercentOutput = new DutyCycleOut(0);
 
   /** Creates a new Arm Subsystem. */
   public CoralMech() {
     // Initialize motor controller
-    motor = new TalonFXS(canID, "canivore");
-
-    // Create control requests
-    positionRequest = new PositionVoltage(0).withSlot(0);
-    velocityRequest = new VelocityVoltage(0).withSlot(0);
+    motor = new TalonFXS(m_canID, m_canBusName);
 
     // Configure motor
     TalonFXSConfiguration config = new TalonFXSConfiguration();
@@ -76,26 +68,26 @@ public class CoralMech extends SubsystemBase {
 
     // Configure PID for slot 0
     Slot0Configs slot0 = config.Slot0;
-    slot0.kP = kP.in(Volts); // Convert to base units
-    slot0.kI = kI.in(Volts); // Convert to base units
-    slot0.kD = kD.in(Volts); // Convert to base units
+    slot0.kP = m_kP.in(Volts); // Convert to base units
+    slot0.kI = m_kI.in(Volts); // Convert to base units
+    slot0.kD = m_kD.in(Volts); // Convert to base units
 
     // Set current limits
     CurrentLimitsConfigs currentLimits = config.CurrentLimits;
-    currentLimits.StatorCurrentLimit = statorCurrentLimit.in(Amps); // Convert to base units
-    currentLimits.StatorCurrentLimitEnable = enableStatorLimit;
-    currentLimits.SupplyCurrentLimit = supplyCurrentLimit.in(Amps); // Convert to base units
-    currentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
+    currentLimits.StatorCurrentLimit = m_statorCurrentLimit.in(Amps); // Convert to base units
+    currentLimits.StatorCurrentLimitEnable = m_enableStatorLimit;
+    currentLimits.SupplyCurrentLimit = m_supplyCurrentLimit.in(Amps); // Convert to base units
+    currentLimits.SupplyCurrentLimitEnable = m_enableSupplyLimit;
 
     // Set soft limits
     SoftwareLimitSwitchConfigs softLimits = config.SoftwareLimitSwitch;
-    softLimits.ForwardSoftLimitThreshold = forwardSoftLimit.in(Radians); // Convert to base units
+    softLimits.ForwardSoftLimitThreshold = m_forwardSoftLimit.in(Radians); // Convert to base units
     softLimits.ForwardSoftLimitEnable = true;
-    softLimits.ReverseSoftLimitThreshold = reverseSoftLimit.in(Radians); // Convert to base units
+    softLimits.ReverseSoftLimitThreshold = m_reverseSoftLimit.in(Radians); // Convert to base units
     softLimits.ReverseSoftLimitEnable = true;
 
     // Set brake mode
-    config.MotorOutput.NeutralMode = brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+    config.MotorOutput.NeutralMode = m_brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
 
     // Apply configuration
     motor.getConfigurator().apply(config);

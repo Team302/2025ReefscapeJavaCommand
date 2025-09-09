@@ -11,14 +11,13 @@ import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
-import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.MotionMagicExpoVoltage;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -39,6 +38,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class ArmMech extends SubsystemBase {
   // Constants
   private final int canID = 17;
+  private static final String canBusName = "canivore";
   private final double gearRatio = 1; // Gear ratio
   private final Voltage kP = Voltage.ofBaseUnits(57, Volts);
   private final Voltage kI = Voltage.ofBaseUnits(25, Volts);
@@ -69,11 +69,7 @@ public class ArmMech extends SubsystemBase {
   private final CANcoder m_canCoder;
   private final PositionVoltage m_positionRequest;
   private final VelocityVoltage m_velocityRequest;
-  private final StatusSignal<Angle> positionSignal;
-  private final StatusSignal<AngularVelocity> velocitySignal;
-  private final StatusSignal<Voltage> voltageSignal;
-  private final StatusSignal<Current> statorCurrentSignal;
-  private final StatusSignal<Temperature> temperatureSignal;
+  private final MotionMagicExpoVoltage m_motionMagicRequest;
 
   // Simulation
   private final SingleJointedArmSim armSim;
@@ -81,20 +77,15 @@ public class ArmMech extends SubsystemBase {
   /** Creates a new Arm Subsystem. */
   public ArmMech() {
     // Initialize motor controller
-    m_motor = new TalonFX(canID, "canivore");
-    m_canCoder = new CANcoder(canID, "canivore");
+    m_motor = new TalonFX(canID, canBusName);
+    m_canCoder = new CANcoder(canID, canBusName);
 
     // Create control requests
     m_positionRequest = new PositionVoltage(0).withSlot(0);
     m_velocityRequest = new VelocityVoltage(0).withSlot(0);
-
-    // Get status signals
-    positionSignal = m_motor.getPosition();
-    velocitySignal = m_motor.getVelocity();
-    voltageSignal = m_motor.getMotorVoltage();
-    statorCurrentSignal = m_motor.getStatorCurrent();
-    temperatureSignal = m_motor.getDeviceTemp();
-
+    m_motionMagicRequest =
+        new MotionMagicExpoVoltage(0)
+            .withSlot(0);
     // Configure motor
     TalonFXConfiguration m_motorConfig = new TalonFXConfiguration();
     CANcoderConfiguration m_canCoderConfig = new CANcoderConfiguration();
@@ -154,10 +145,7 @@ public class ArmMech extends SubsystemBase {
 
   /** Update simulation and telemetry. */
   @Override
-  public void periodic() {
-    BaseStatusSignal.refreshAll(
-        positionSignal, velocitySignal, voltageSignal, statorCurrentSignal, temperatureSignal);
-  }
+  public void periodic() {}
 
   /** Update simulation. */
   @Override
@@ -279,6 +267,16 @@ public class ArmMech extends SubsystemBase {
    */
   public void setVoltage(Voltage voltage) {
     m_motor.setVoltage(voltage.in(Volts));
+  }
+
+  /**
+   * Sets the target position using Motion Magic.
+   *
+   * @param targetAngle The target angle in radians.
+   */
+  public void setMotionMagicTarget(Angle targetAngle) {
+    m_motionMagicRequest.(targetAngle.in(Radians));
+    m_motor.setControl(m_motionMagicRequest);
   }
 
   /**

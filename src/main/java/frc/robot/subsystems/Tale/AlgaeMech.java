@@ -27,24 +27,25 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 @Logged(name = "AlgaeMechSubsystem")
 public class AlgaeMech extends SubsystemBase {
   // Constants
-  private final int canID = 19;
-  private final double gearRatio = 4;
-  private final Voltage kP = Voltage.ofBaseUnits(0, Volts);
-  private final Voltage kI = Voltage.ofBaseUnits(0, Volts);
-  private final Voltage kD = Voltage.ofBaseUnits(0, Volts);
-  private final AngularVelocity maxVelocity = RadiansPerSecond.of(1); // rad/s
-  private final AngularAcceleration maxAcceleration = RadiansPerSecondPerSecond.of(1); // rad/s²
-  private final boolean brakeMode = true;
-  private final Angle forwardSoftLimit = Angle.ofBaseUnits(0, Radians); // max angle in radians
-  private final Angle reverseSoftLimit = Angle.ofBaseUnits(0, Radians); // min angle in radians
-  private final boolean enableStatorLimit = true;
-  private final Current statorCurrentLimit = Current.ofBaseUnits(100, Amps);
-  private final boolean enableSupplyLimit = true;
-  private final Current supplyCurrentLimit = Current.ofBaseUnits(60, Amps);
-  private final Distance armLength = Distance.ofBaseUnits(1, Meters); // meters
+  private final int m_canID = 19;
+  private static final String m_canBusName = "canivore";
+  private final double m_gearRatio = 4;
+  private final Voltage m_kP = Voltage.ofBaseUnits(0, Volts);
+  private final Voltage m_kI = Voltage.ofBaseUnits(0, Volts);
+  private final Voltage m_kD = Voltage.ofBaseUnits(0, Volts);
+  private final AngularVelocity m_maxVelocity = RadiansPerSecond.of(1); // rad/s
+  private final AngularAcceleration m_maxAcceleration = RadiansPerSecondPerSecond.of(1); // rad/s²
+  private final boolean m_brakeMode = true;
+  private final Angle m_forwardSoftLimit = Angle.ofBaseUnits(0, Radians); // max angle in radians
+  private final Angle m_reverseSoftLimit = Angle.ofBaseUnits(0, Radians); // min angle in radians
+  private final boolean m_enableStatorLimit = true;
+  private final Current m_statorCurrentLimit = Current.ofBaseUnits(100, Amps);
+  private final boolean m_enableSupplyLimit = true;
+  private final Current m_supplyCurrentLimit = Current.ofBaseUnits(60, Amps);
+  private final Distance m_armLength = Distance.ofBaseUnits(1, Meters); // meters
 
   // Feedforward
-  private final ArmFeedforward feedforward =
+  private final ArmFeedforward m_feedforward =
       new ArmFeedforward(
           0, // kS
           0, // kG
@@ -53,12 +54,12 @@ public class AlgaeMech extends SubsystemBase {
           );
 
   // Motor controller
-  private final TalonFXS motor;
+  private final TalonFXS m_motor;
 
   /** Creates a new Arm Subsystem. */
   public AlgaeMech() {
     // Initialize motor controller
-    motor = new TalonFXS(canID, "canivore");
+    m_motor = new TalonFXS(m_canID, m_canBusName);
     // Digital input getter
 
     TalonFXSConfiguration config = new TalonFXSConfiguration();
@@ -66,32 +67,32 @@ public class AlgaeMech extends SubsystemBase {
 
     // Configure PID for slot 0
     Slot0Configs slot0 = config.Slot0;
-    slot0.kP = kP.in(Volts);
-    slot0.kI = kI.in(Volts);
-    slot0.kD = kD.in(Volts);
+    slot0.kP = m_kP.in(Volts);
+    slot0.kI = m_kI.in(Volts);
+    slot0.kD = m_kD.in(Volts);
 
     // Set current limits
     CurrentLimitsConfigs currentLimits = config.CurrentLimits;
-    currentLimits.StatorCurrentLimit = statorCurrentLimit.in(Amps);
-    currentLimits.StatorCurrentLimitEnable = enableStatorLimit;
-    currentLimits.SupplyCurrentLimit = supplyCurrentLimit.in(Amps);
-    currentLimits.SupplyCurrentLimitEnable = enableSupplyLimit;
+    currentLimits.StatorCurrentLimit = m_statorCurrentLimit.in(Amps);
+    currentLimits.StatorCurrentLimitEnable = m_enableStatorLimit;
+    currentLimits.SupplyCurrentLimit = m_supplyCurrentLimit.in(Amps);
+    currentLimits.SupplyCurrentLimitEnable = m_enableSupplyLimit;
 
     // Set soft limits
     SoftwareLimitSwitchConfigs softLimits = config.SoftwareLimitSwitch;
-    softLimits.ForwardSoftLimitThreshold = forwardSoftLimit.in(Rotations);
+    softLimits.ForwardSoftLimitThreshold = m_forwardSoftLimit.in(Rotations);
     softLimits.ForwardSoftLimitEnable = true;
-    softLimits.ReverseSoftLimitThreshold = reverseSoftLimit.in(Rotations);
+    softLimits.ReverseSoftLimitThreshold = m_reverseSoftLimit.in(Rotations);
     softLimits.ReverseSoftLimitEnable = true;
 
     // Set brake mode
-    config.MotorOutput.NeutralMode = brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+    config.MotorOutput.NeutralMode = m_brakeMode ? NeutralModeValue.Brake : NeutralModeValue.Coast;
 
     // Apply configuration
-    motor.getConfigurator().apply(config);
+    m_motor.getConfigurator().apply(config);
 
     // Reset encoder position
-    motor.setPosition(0);
+    m_motor.setPosition(0);
   }
 
   /** Update simulation and telemetry. */
@@ -110,7 +111,7 @@ public class AlgaeMech extends SubsystemBase {
   @Logged(name = "Position/Rotations")
   public Angle getPosition() {
     // Rotations
-    return motor.getPosition().getValue();
+    return m_motor.getPosition().getValue();
   }
 
   /**
@@ -120,7 +121,7 @@ public class AlgaeMech extends SubsystemBase {
    */
   @Logged(name = "Velocity")
   public AngularVelocity getVelocity() {
-    return motor.getVelocity().getValue();
+    return m_motor.getVelocity().getValue();
   }
 
   /**
@@ -130,7 +131,7 @@ public class AlgaeMech extends SubsystemBase {
    */
   @Logged(name = "Voltage")
   public Voltage getVoltage() {
-    return motor.getMotorVoltage().getValue();
+    return m_motor.getMotorVoltage().getValue();
   }
 
   /**
@@ -140,7 +141,7 @@ public class AlgaeMech extends SubsystemBase {
    */
   @Logged(name = "Current")
   public Current getCurrent() {
-    return motor.getSupplyCurrent().getValue();
+    return m_motor.getSupplyCurrent().getValue();
   }
 
   /**
@@ -150,7 +151,7 @@ public class AlgaeMech extends SubsystemBase {
    */
   @Logged(name = "Temperature")
   public Temperature getTemperature() {
-    return motor.getDeviceTemp().getValue();
+    return m_motor.getDeviceTemp().getValue();
   }
 
   /**
@@ -159,7 +160,7 @@ public class AlgaeMech extends SubsystemBase {
    * @param voltage The voltage to apply
    */
   public void setVoltage(double voltage) {
-    motor.setVoltage(voltage);
+    m_motor.setVoltage(voltage);
   }
 
   /**
@@ -170,7 +171,7 @@ public class AlgaeMech extends SubsystemBase {
   public void setDutyCycle(double percentage) {
     DutyCycleOut algaePercentOutput = new DutyCycleOut(0);
     algaePercentOutput.Output = percentage;
-    motor.setControl(algaePercentOutput.withOutput(percentage));
+    m_motor.setControl(algaePercentOutput.withOutput(percentage));
   }
 
   /**

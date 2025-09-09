@@ -1,22 +1,18 @@
 package frc.robot.subsystems.Tale;
 
+import static edu.wpi.first.units.Units.*;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.MetersPerSecondPerSecond;
-
 import static edu.wpi.first.units.Units.Volts;
-import static edu.wpi.first.units.Units.*;
 
-import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix.*;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.PositionVoltage;
-import com.ctre.phoenix6.controls.VelocityVoltage;
-import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.controls.MotionMagicExpoVoltage;
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.ForwardLimitSourceValue;
@@ -31,7 +27,6 @@ import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import com.ctre.phoenix.*;
 
 /** Elevator subsystem using TalonFX with Krakenx60 m_motor */
 @Logged(name = "ElevatorSubsystem")
@@ -60,6 +55,8 @@ public class ElevatorMech extends SubsystemBase {
   private final Current supplyCurrentLimit = Current.ofBaseUnits(70, Amps);
   private final Distance drumRadius = Distance.ofBaseUnits(0.0254, Meters); // meters
 
+  private static final String canBusName = "canivore";
+
   // Feedforward
   private final ElevatorFeedforward feedforward =
       new ElevatorFeedforward(
@@ -73,14 +70,7 @@ public class ElevatorMech extends SubsystemBase {
   private final TalonFX m_leader;
   private final TalonFX m_follower;
   private final CANcoder m_canCoder;
-  private final PositionVoltage m_positionRequest;
-  private final VelocityVoltage m_velocityRequest;
   private final MotionMagicExpoVoltage m_motionMagicRequest;
-  private final StatusSignal<Angle> positionSignal;
-  private final StatusSignal<AngularVelocity> velocitySignal;
-  private final StatusSignal<Voltage> voltageSignal;
-  private final StatusSignal<Current> statorCurrentSignal;
-  private final StatusSignal<Temperature> temperatureSignal;
 
   // Simulation
   private final ElevatorSim elevatorSim;
@@ -88,21 +78,12 @@ public class ElevatorMech extends SubsystemBase {
   /** Creates a new Elevator Subsystem. */
   public ElevatorMech() {
     // Initialize m_motor controller
-    m_leader = new TalonFX(leaderCanID, "canivore");
-    m_follower = new TalonFX(followerCanID, "canivore");
-    m_canCoder = new CANcoder(leaderCanID, "canivore");
+    m_leader = new TalonFX(leaderCanID, canBusName);
+    m_follower = new TalonFX(followerCanID, canBusName);
+    m_canCoder = new CANcoder(leaderCanID, canBusName);
 
     // Create control requests
-    m_positionRequest = new PositionVoltage(0).withSlot(0);
-    m_velocityRequest = new VelocityVoltage(0).withSlot(0);
     m_motionMagicRequest = new MotionMagicExpoVoltage(0);
-
-    // get status signals
-    positionSignal = m_leader.getPosition();
-    velocitySignal = m_leader.getVelocity();
-    voltageSignal = m_leader.getMotorVoltage();
-    statorCurrentSignal = m_leader.getStatorCurrent();
-    temperatureSignal = m_leader.getDeviceTemp();
 
     // Configure leader motor
     TalonFXConfiguration m_leaderConfig = new TalonFXConfiguration();
@@ -196,16 +177,13 @@ public class ElevatorMech extends SubsystemBase {
 
   /** Update simulation and telemetry. */
   @Override
-  public void periodic() {
-    BaseStatusSignal.refreshAll(
-        positionSignal, velocitySignal, voltageSignal, statorCurrentSignal, temperatureSignal);
-  }
+  public void periodic() {}
 
   /** Update simulation. */
   @Override
   public void simulationPeriodic() {
     // Set input voltage from m_motor controller to simulation
-    elevatorSim.setInput(getVoltage());
+    elevatorSim.setInput(getVoltage().in(Volts));
 
     // Update simulation by 20ms
     elevatorSim.update(0.020);
@@ -225,9 +203,9 @@ public class ElevatorMech extends SubsystemBase {
    * @return Position in Rotations
    */
   @Logged(name = "Position/Rotations")
-  public double getPosition() {
+  public Angle getPosition() {
     // Rotations
-    return positionSignal.getValueAsDouble();
+    return m_leader.getPosition().getValue();
   }
 
   /**
@@ -236,8 +214,8 @@ public class ElevatorMech extends SubsystemBase {
    * @return Velocity in rotations per second
    */
   @Logged(name = "Velocity")
-  public double getVelocity() {
-    return velocitySignal.getValueAsDouble();
+  public AngularVelocity getVelocity() {
+    return m_leader.getVelocity().getValue();
   }
 
   /**
@@ -246,8 +224,8 @@ public class ElevatorMech extends SubsystemBase {
    * @return Applied voltage
    */
   @Logged(name = "Voltage")
-  public double getVoltage() {
-    return voltageSignal.getValueAsDouble();
+  public Voltage getVoltage() {
+    return m_leader.getMotorVoltage().getValue();
   }
 
   /**
@@ -255,8 +233,8 @@ public class ElevatorMech extends SubsystemBase {
    *
    * @return Motor current in amps
    */
-  public double getCurrent() {
-    return statorCurrentSignal.getValueAsDouble();
+  public Current getCurrent() {
+    return m_leader.getSupplyCurrent().getValue();
   }
 
   /**
@@ -264,8 +242,8 @@ public class ElevatorMech extends SubsystemBase {
    *
    * @return Motor temperature in Celsius
    */
-  public double getTemperature() {
-    return temperatureSignal.getValueAsDouble();
+  public Temperature getTemperature() {
+    return m_leader.getDeviceTemp().getValue();
   }
 
   /**
@@ -288,7 +266,7 @@ public class ElevatorMech extends SubsystemBase {
     // double positionRotations = position.in(Meters) / (2.0 * Math.PI * drumRadius.in(Meters));
 
     double ffVolts =
-        feedforward.calculate(getVelocity(), acceleration.in(MetersPerSecondPerSecond));
+        feedforward.calculate(getVelocity().in(Radians), acceleration.in(MetersPerSecondPerSecond));
     // m_leader.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
     m_leader.setControl(
         m_motionMagicRequest.withPosition(position.in(Meters)).withFeedForward(ffVolts));
@@ -355,7 +333,7 @@ public class ElevatorMech extends SubsystemBase {
   public Command moveToHeightCommand(double heightInches) {
     return run(() -> {
           double currentHeight =
-              getPosition()
+              getPosition().in()
                   * (2.0 * Math.PI * drumRadius.in(Meters)); // Convert drumRadius to meters
           double error = heightInches - currentHeight;
           double velocity =
