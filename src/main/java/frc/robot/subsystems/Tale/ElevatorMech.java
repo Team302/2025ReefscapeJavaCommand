@@ -35,6 +35,7 @@ public class ElevatorMech extends SubsystemBase {
   private final int leaderCanID = 4;
   private final int followerCanID = 5;
   private final double gearRatio = 4; // Gear ratio
+  private final Distance targetPosition = Distance.ofBaseUnits(0.0, Inches);
   private final Voltage kP = Voltage.ofBaseUnits(2.0, Volts);
   private final Voltage kI = Voltage.ofBaseUnits(0.0, Volts);
   private final Voltage kD = Voltage.ofBaseUnits(0.0, Volts);
@@ -46,8 +47,7 @@ public class ElevatorMech extends SubsystemBase {
   private final LinearAcceleration maxAcceleration =
       MetersPerSecondPerSecond.of(5); // meters per second squared
   private final boolean brakeMode = true;
-  private final Distance forwardSoftLimit =
-      Distance.ofBaseUnits(30, Meters); // max height in meters
+  private final Distance forwardSoftLimit = Distance.ofBaseUnits(30, Meters); // max height in meters
   private final Distance reverseSoftLimit = Distance.ofBaseUnits(0, Meters); // min height in meters
   private final boolean enableStatorLimit = true;
   private final Current statorCurrentLimit = Current.ofBaseUnits(120, Amps);
@@ -252,7 +252,7 @@ public class ElevatorMech extends SubsystemBase {
    * @param position The target position in inches
    */
   public void setPosition(Distance position) {
-    setPosition(position, LinearAcceleration.ofBaseUnits(0.0, MetersPerSecondPerSecond));
+    targetPosition = position;;
   }
 
   /**
