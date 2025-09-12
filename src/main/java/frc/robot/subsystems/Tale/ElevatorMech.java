@@ -1,8 +1,13 @@
 package frc.robot.subsystems.Tale;
 
-import static edu.wpi.first.units.Units.*;
+import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.MetersPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.Volts;
 
-import com.ctre.phoenix.*;
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -15,6 +20,7 @@ import com.ctre.phoenix6.signals.ForwardLimitTypeValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.ReverseLimitSourceValue;
 import com.ctre.phoenix6.signals.ReverseLimitTypeValue;
+import com.ctre.phoenix6.signals.SensorDirectionValue;
 import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.controller.ElevatorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -30,7 +36,6 @@ public class ElevatorMech extends SubsystemBase {
   private final int leaderCanID = 4;
   private final int followerCanID = 5;
   private final double gearRatio = 4; // Gear ratio
-  private final Distance targetPosition = Distance.ofBaseUnits(0.0, Inches);
   private final Voltage kP = Voltage.ofBaseUnits(2.0, Volts);
   private final Voltage kI = Voltage.ofBaseUnits(0.0, Volts);
   private final Voltage kD = Voltage.ofBaseUnits(0.0, Volts);
@@ -66,7 +71,6 @@ public class ElevatorMech extends SubsystemBase {
   private final TalonFX m_leader;
   private final TalonFX m_follower;
   private final CANcoder m_canCoder;
-  private final MotionMagicExpoVoltage m_motionMagicRequest;
 
   // Simulation
   private final ElevatorSim elevatorSim;
@@ -78,15 +82,17 @@ public class ElevatorMech extends SubsystemBase {
     m_follower = new TalonFX(followerCanID, canBusName);
     m_canCoder = new CANcoder(leaderCanID, canBusName);
 
-    // Create control requests
-    m_motionMagicRequest = new MotionMagicExpoVoltage(0);
-
     // Configure leader motor
     TalonFXConfiguration m_leaderConfig = new TalonFXConfiguration();
 
     // Set remote sensor
     m_leaderConfig.Feedback.FeedbackRemoteSensorID = leaderCanID;
     m_leaderConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
+
+    // Set up the leader to use the fused CANcoder as its feedback sensor
+    m_leaderConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
+    m_leaderConfig.Feedback.FeedbackRemoteSensorID =
+        m_canCoder.getDeviceID(); // Use the CANcoder's device ID
 
     // Reset encoder position
     m_leader.getConfigurator().apply(m_leaderConfig);
@@ -142,10 +148,11 @@ public class ElevatorMech extends SubsystemBase {
     motionMagicConfigs.MotionMagicExpo_kV = 0.08; // kV is around 0.08 V/rps
     motionMagicConfigs.MotionMagicExpo_kA = 0.1; // Use a slower kA of 0.1 V/(rps/s)
 
-    // create a Motion Magic request, voltage output
-
-    // set target position to 100 rotations
-    m_leader.setControl(m_motionMagicRequest.withPosition(100));
+    CANcoderConfiguration m_canCoderConfig = new CANcoderConfiguration();
+    m_canCoderConfig.MagnetSensor.MagnetOffset =
+        0.446289; // TODO get the actual offset and put it here!!!
+    m_canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
+    m_canCoder.getConfigurator().apply(m_canCoderConfig);
 
     // Apply follower configuration
     m_follower.getConfigurator().apply(m_followerConfig);
@@ -292,8 +299,9 @@ public class ElevatorMech extends SubsystemBase {
    * @param targetAngle The target angle in radians.
    */
   private void setMotionMagicTarget(Angle targetAngle) {
-    m_motionMagicRequest.Position = targetAngle.in(Rotations);
-    m_leader.setControl(m_motionMagicRequest);
+    MotionMagicExpoVoltage motionMagic = new MotionMagicExpoVoltage(0);
+    motionMagic.Position = targetAngle.in(Rotations);
+    m_leader.setControl(motionMagic);
   }
 
   /**

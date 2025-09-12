@@ -19,6 +19,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicExpoVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import edu.wpi.first.epilogue.Logged;
@@ -63,12 +64,9 @@ public class ArmMech extends SubsystemBase {
   // Motor controller
   private final TalonFX m_motor;
   private final CANcoder m_canCoder;
-  private final MotionMagicExpoVoltage m_motionMagicRequest;
 
   // Simulation
   private final SingleJointedArmSim armSim;
-
-  private Angle m_targetAngle = Angle.ofBaseUnits(0, Degrees);
 
   /** Creates a new Arm Subsystem. */
   public ArmMech() {
@@ -76,7 +74,6 @@ public class ArmMech extends SubsystemBase {
     m_motor = new TalonFX(canID, canBusName);
     m_canCoder = new CANcoder(canID, canBusName);
 
-    m_motionMagicRequest = new MotionMagicExpoVoltage(0).withSlot(0);
     // Configure motor
     TalonFXConfiguration m_motorConfig = new TalonFXConfiguration();
     CANcoderConfiguration m_canCoderConfig = new CANcoderConfiguration();
@@ -84,6 +81,10 @@ public class ArmMech extends SubsystemBase {
     m_canCoderConfig.MagnetSensor.MagnetOffset = 0.446289; // Set magnet offset if needed
     m_canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
     m_canCoder.getConfigurator().apply(m_canCoderConfig);
+
+    // Configure TalonFX to use fused CANcoder as feedback sensor
+    m_motorConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
+    m_motorConfig.Feedback.FeedbackRemoteSensorID = m_canCoder.getDeviceID();
 
     // Configure PID for slot 0
     Slot0Configs slot0 = m_motorConfig.Slot0;
@@ -116,9 +117,6 @@ public class ArmMech extends SubsystemBase {
 
     // Apply configuration
     m_motor.getConfigurator().apply(m_motorConfig);
-
-    // Reset encoder position
-    m_motor.setPosition(0);
 
     // Initialize simulation
     armSim =
@@ -155,7 +153,6 @@ public class ArmMech extends SubsystemBase {
    */
   @Logged(name = "Position/Rotations")
   public Angle getPosition() {
-    // Rotations
     return m_motor.getPosition().getValue();
   }
 
@@ -205,8 +202,9 @@ public class ArmMech extends SubsystemBase {
    * @param targetAngle The target angle in radians.
    */
   private void setMotionMagicTarget(Angle targetAngle) {
-    m_motionMagicRequest.Position = targetAngle.in(Rotations);
-    m_motor.setControl(m_motionMagicRequest);
+    MotionMagicExpoVoltage motionMagic = new MotionMagicExpoVoltage(0);
+    motionMagic.Position = targetAngle.in(Rotations);
+    m_motor.setControl(motionMagic);
   }
 
   /**
