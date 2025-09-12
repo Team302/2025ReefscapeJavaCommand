@@ -1,11 +1,6 @@
 package frc.robot.subsystems.Tale;
 
 import static edu.wpi.first.units.Units.*;
-import static edu.wpi.first.units.Units.Amps;
-import static edu.wpi.first.units.Units.Meters;
-import static edu.wpi.first.units.Units.MetersPerSecond;
-import static edu.wpi.first.units.Units.MetersPerSecondPerSecond;
-import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix.*;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
@@ -47,7 +42,8 @@ public class ElevatorMech extends SubsystemBase {
   private final LinearAcceleration maxAcceleration =
       MetersPerSecondPerSecond.of(5); // meters per second squared
   private final boolean brakeMode = true;
-  private final Distance forwardSoftLimit = Distance.ofBaseUnits(30, Meters); // max height in meters
+  private final Distance forwardSoftLimit =
+      Distance.ofBaseUnits(30, Meters); // max height in meters
   private final Distance reverseSoftLimit = Distance.ofBaseUnits(0, Meters); // min height in meters
   private final boolean enableStatorLimit = true;
   private final Current statorCurrentLimit = Current.ofBaseUnits(120, Amps);
@@ -204,8 +200,17 @@ public class ElevatorMech extends SubsystemBase {
    */
   @Logged(name = "Position/Rotations")
   public Angle getPosition() {
-    // Rotations
     return m_leader.getPosition().getValue();
+  }
+
+  /**
+   * Calculates the current height of the elevator based on rotation and pulley radius.
+   *
+   * @return The current height of the elevator as a Distance
+   */
+  @Logged(name = "Height/Meters")
+  public Distance getElevatorHeight() {
+    return calcDistanceFromRotations(getPosition());
   }
 
   /**
@@ -247,65 +252,6 @@ public class ElevatorMech extends SubsystemBase {
   }
 
   /**
-   * Set elevator position.
-   *
-   * @param position The target position in inches
-   */
-  public void setPosition(Distance position) {
-    targetPosition = position;;
-  }
-
-  /**
-   * Set elevator position with acceleration.
-   *
-   * @param position The target position in meters
-   * @param acceleration The acceleration in meters per second squared
-   */
-  public void setPosition(Distance position, LinearAcceleration acceleration) {
-    // Convert meters to rotations
-    // double positionRotations = position.in(Meters) / (2.0 * Math.PI * drumRadius.in(Meters));
-
-    double ffVolts =
-        feedforward.calculate(getVelocity().in(Radians), acceleration.in(MetersPerSecondPerSecond));
-    // m_leader.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
-    m_leader.setControl(
-        m_motionMagicRequest.withPosition(position.in(Meters)).withFeedForward(ffVolts));
-    ;
-  }
-
-  /**
-   * Set elevator velocity.
-   *
-   * @param velocity The target velocity in meters per second
-   */
-  public void setVelocity(double velocity) {
-    setVelocity(velocity, 0);
-  }
-
-  /**
-   * Set elevator velocity with acceleration.
-   *
-   * @param velocity The target velocity in meters per second
-   * @param acceleration The acceleration in meters per second squared
-   */
-  public void setVelocity(double velocity, double acceleration) {
-    // Convert meters/sec to rotations/sec
-    double velocityRotations = velocity / (2.0 * Math.PI * drumRadius.in(Meters));
-
-    double ffVolts = feedforward.calculate(getVelocity(), acceleration);
-    m_leader.setControl(m_velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
-  }
-
-  /**
-   * Set m_motor voltage directly.
-   *
-   * @param voltage The voltage to apply
-   */
-  public void setVoltage(double voltage) {
-    m_leader.setVoltage(voltage);
-  }
-
-  /**
    * Get the elevator simulation for testing.
    *
    * @return The elevator simulation model
@@ -315,13 +261,39 @@ public class ElevatorMech extends SubsystemBase {
   }
 
   /**
-   * Creates a command to set the elevator to a specific height.
+   * Calculate the elevator height based on rotations and drum radius.
    *
-   * @param heightMeters The target height in meters
-   * @return A command that sets the elevator to the specified height
+   * @return The elevator height as a Distance
    */
-  public Command setHeightCommand(Distance heightMeters) {
-    return runOnce(() -> setPosition(heightMeters));
+  private Distance calcDistanceFromRotations(Angle rotations) {
+    Distance circumference = Distance.ofBaseUnits(2 * Math.PI * drumRadius.in(Meters), Meters);
+
+    return Distance.ofBaseUnits(rotations.in(Rotations) * circumference.in(Meters), Meters);
+  }
+
+  /**
+   * Calculates the number of rotations needed to achieve a specified elevator height. This is the
+   * inverse function of calcElevatorDistance.
+   *
+   * @param distance The target distance (height) for the elevator
+   * @return The required angle (in rotations) to achieve that distance
+   */
+  private Angle calcRotationsFromDistance(Distance distance) {
+    Distance circumference = Distance.ofBaseUnits(2 * Math.PI * drumRadius.in(Meters), Meters);
+
+    double rotationsValue = distance.in(Meters) / circumference.in(Meters);
+
+    return Angle.ofBaseUnits(rotationsValue, Rotations);
+  }
+
+  /**
+   * Sets the target position using Motion Magic.
+   *
+   * @param targetAngle The target angle in radians.
+   */
+  private void setMotionMagicTarget(Angle targetAngle) {
+    m_motionMagicRequest.Position = targetAngle.in(Rotations);
+    m_leader.setControl(m_motionMagicRequest);
   }
 
   /**
@@ -330,26 +302,11 @@ public class ElevatorMech extends SubsystemBase {
    * @param heightMeters The target height in Inches
    * @return A command that moves the elevator to the specified height
    */
-  public Command moveToHeightCommand(double heightInches) {
-    return run(() -> {
-          double currentHeight =
-              getPosition().in()
-                  * (2.0 * Math.PI * drumRadius.in(Meters)); // Convert drumRadius to meters
-          double error = heightInches - currentHeight;
-          double velocity =
-              Math.signum(error)
-                  * Math.min(
-                      Math.abs(error) * 2.0,
-                      maxVelocity.in(MetersPerSecond)); // Convert maxVelocity to meters per second
-          setVelocity(velocity);
-        })
-        .until(
-            () -> {
-              double currentHeight =
-                  getPosition()
-                      * (2.0 * Math.PI * drumRadius.in(Meters)); // Convert drumRadius to meters
-              return Math.abs(heightInches - currentHeight) < 0.02; // 2cm tolerance
-            });
+  public Command setHeightCommand(Distance targetHeight) {
+    return run(
+        () -> {
+          setMotionMagicTarget(calcRotationsFromDistance(targetHeight));
+        });
   }
 
   /**
@@ -358,16 +315,6 @@ public class ElevatorMech extends SubsystemBase {
    * @return A command that stops the elevator
    */
   public Command stopCommand() {
-    return runOnce(() -> setVelocity(0));
-  }
-
-  /**
-   * Creates a command to move the elevator at a specific velocity.
-   *
-   * @param velocityMetersPerSecond The target velocity in meters per second
-   * @return A command that moves the elevator at the specified velocity
-   */
-  public Command moveAtVelocityCommand(double velocityMetersPerSecond) {
-    return run(() -> setVelocity(velocityMetersPerSecond));
+    return runOnce(() -> setMotionMagicTarget(getPosition()));
   }
 }

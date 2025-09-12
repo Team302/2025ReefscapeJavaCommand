@@ -2,12 +2,11 @@ package frc.robot.subsystems.Tale;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.DegreesPerSecond;
-import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
@@ -18,8 +17,6 @@ import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicExpoVoltage;
-import com.ctre.phoenix6.controls.PositionVoltage;
-import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -27,7 +24,6 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -67,12 +63,12 @@ public class ArmMech extends SubsystemBase {
   // Motor controller
   private final TalonFX m_motor;
   private final CANcoder m_canCoder;
-  private final PositionVoltage m_positionRequest;
-  private final VelocityVoltage m_velocityRequest;
   private final MotionMagicExpoVoltage m_motionMagicRequest;
 
   // Simulation
   private final SingleJointedArmSim armSim;
+
+  private Angle m_targetAngle = Angle.ofBaseUnits(0, Degrees);
 
   /** Creates a new Arm Subsystem. */
   public ArmMech() {
@@ -80,12 +76,7 @@ public class ArmMech extends SubsystemBase {
     m_motor = new TalonFX(canID, canBusName);
     m_canCoder = new CANcoder(canID, canBusName);
 
-    // Create control requests
-    m_positionRequest = new PositionVoltage(0).withSlot(0);
-    m_velocityRequest = new VelocityVoltage(0).withSlot(0);
-    m_motionMagicRequest =
-        new MotionMagicExpoVoltage(0)
-            .withSlot(0);
+    m_motionMagicRequest = new MotionMagicExpoVoltage(0).withSlot(0);
     // Configure motor
     TalonFXConfiguration m_motorConfig = new TalonFXConfiguration();
     CANcoderConfiguration m_canCoderConfig = new CANcoderConfiguration();
@@ -209,73 +200,12 @@ public class ArmMech extends SubsystemBase {
   }
 
   /**
-   * Set arm angle.
-   *
-   * @param angleDegrees The target angle in degrees
-   */
-  public void setAngle(Angle angleDegrees) {
-    setAngle(angleDegrees);
-  }
-
-  /**
-   * Set arm angle with acceleration.
-   *
-   * @param angleDegrees The target angle in degrees
-   * @param acceleration The acceleration in rad/s²
-   */
-  public void setAngle(Angle angleDegrees, AngularAcceleration acceleration) {
-    // Convert degrees to rotations
-    double angleRadians = angleDegrees.in(Radians);
-    double positionRotations = angleRadians / (2.0 * Math.PI);
-
-    double ffVolts =
-        feedforward.calculate(
-            getPosition().in(Radians), acceleration.in(RadiansPerSecondPerSecond));
-    m_motor.setControl(m_positionRequest.withPosition(positionRotations).withFeedForward(ffVolts));
-  }
-
-  /**
-   * Set arm angular velocity.
-   *
-   * @param velocityDegPerSec The target velocity in degrees per second
-   */
-  public void setVelocity(AngularVelocity velocityDegPerSec) {
-    setVelocity(velocityDegPerSec, AngularAcceleration.ofBaseUnits(0, DegreesPerSecondPerSecond));
-  }
-
-  /**
-   * Set arm angular velocity with acceleration.
-   *
-   * @param velocityDegPerSec The target velocity in degrees per second
-   * @param acceleration The acceleration in degrees per second squared
-   */
-  public void setVelocity(AngularVelocity velocityDegPerSec, AngularAcceleration acceleration) {
-    // Convert degrees/sec to rotations/sec
-    double velocityRadPerSec = velocityDegPerSec.in(RadiansPerSecond);
-    double velocityRotations = velocityRadPerSec / (2.0 * Math.PI);
-
-    double ffVolts =
-        feedforward.calculate(
-            getPosition().in(Radians), acceleration.in(RadiansPerSecondPerSecond));
-    m_motor.setControl(m_velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
-  }
-
-  /**
-   * Set motor voltage directly.
-   *
-   * @param voltage The voltage to apply
-   */
-  public void setVoltage(Voltage voltage) {
-    m_motor.setVoltage(voltage.in(Volts));
-  }
-
-  /**
    * Sets the target position using Motion Magic.
    *
    * @param targetAngle The target angle in radians.
    */
-  public void setMotionMagicTarget(Angle targetAngle) {
-    m_motionMagicRequest.(targetAngle.in(Radians));
+  private void setMotionMagicTarget(Angle targetAngle) {
+    m_motionMagicRequest.Position = targetAngle.in(Rotations);
     m_motor.setControl(m_motionMagicRequest);
   }
 
@@ -289,38 +219,16 @@ public class ArmMech extends SubsystemBase {
   }
 
   /**
-   * Creates a command to set the arm to a specific angle.
-   *
-   * @param angleDegrees The target angle in degrees
-   * @return A command that sets the arm to the specified angle
-   */
-  public Command setAngleCommand(Angle angleDegrees) {
-    return runOnce(() -> setAngle(angleDegrees));
-  }
-
-  /**
    * Creates a command to move the arm to a specific angle with a profile.
    *
    * @param angleDegrees The target angle in degrees
    * @return A command that moves the arm to the specified angle
    */
   public Command moveToAngleCommand(Angle angleDegrees) {
-    return run(() -> {
-          double currentAngle = getPosition().in(Degrees);
-          double error = angleDegrees.in(Degrees) - currentAngle;
-          double velocityDegPerSec =
-              Math.signum(error)
-                  * Math.min(
-                      Math.abs(error) * 2.0,
-                      Units.radiansToDegrees(maxVelocity.in(RadiansPerSecond)));
-          setVelocity(AngularVelocity.ofBaseUnits(velocityDegPerSec, DegreesPerSecond));
-        })
-        .until(
-            () -> {
-              double currentAngle = getPosition().in(Degrees);
-              return Math.abs(angleDegrees.in(Degrees) - currentAngle) < 2.0; // 2 degree tolerance
-            })
-        .finallyDo((interrupted) -> setVelocity(AngularVelocity.ofBaseUnits(0, DegreesPerSecond)));
+    return runOnce(
+        () -> {
+          setMotionMagicTarget(angleDegrees);
+        });
   }
 
   /**
@@ -329,16 +237,6 @@ public class ArmMech extends SubsystemBase {
    * @return A command that stops the arm
    */
   public Command stopCommand() {
-    return runOnce(() -> setVelocity(AngularVelocity.ofBaseUnits(0, DegreesPerSecond)));
-  }
-
-  /**
-   * Creates a command to move the arm at a specific velocity.
-   *
-   * @param velocityDegPerSec The target velocity in degrees per second
-   * @return A command that moves the arm at the specified velocity
-   */
-  public Command moveAtVelocityCommand(double velocityDegPerSec) {
-    return run(() -> setVelocity(AngularVelocity.ofBaseUnits(velocityDegPerSec, DegreesPerSecond)));
+    return runOnce(() -> setMotionMagicTarget(getPosition()));
   }
 }
