@@ -1,14 +1,12 @@
 package frc.robot.subsystems.Tale;
 
 import static edu.wpi.first.units.Units.Amps;
-import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
 import com.ctre.phoenix6.configs.TalonFXSConfiguration;
 import com.ctre.phoenix6.controls.DutyCycleOut;
@@ -16,7 +14,6 @@ import com.ctre.phoenix6.hardware.TalonFXS;
 import com.ctre.phoenix6.signals.MotorArrangementValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.epilogue.Logged;
-import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -41,21 +38,9 @@ public class CoralMech extends SubsystemBase {
   private final Current m_statorCurrentLimit = Current.ofBaseUnits(100, Amps);
   private final boolean m_enableSupplyLimit = true;
   private final Current m_supplyCurrentLimit = Current.ofBaseUnits(60, Amps);
-  private final Distance m_armLength = Distance.ofBaseUnits(1, Meters); // meters
-
-  // Feedforward
-  private final ArmFeedforward m_feedforward =
-      new ArmFeedforward(
-          0, // kS
-          0, // kG
-          0, // kV
-          0 // kA
-          );
 
   // Motor controller
   private final TalonFXS motor;
-  // voltage
-  private DutyCycleOut m_coralPercentOutput = new DutyCycleOut(0);
 
   /** Creates a new Arm Subsystem. */
   public CoralMech() {
@@ -65,12 +50,6 @@ public class CoralMech extends SubsystemBase {
     // Configure motor
     TalonFXSConfiguration config = new TalonFXSConfiguration();
     config.Commutation.MotorArrangement = MotorArrangementValue.Minion_JST;
-
-    // Configure PID for slot 0
-    Slot0Configs slot0 = config.Slot0;
-    slot0.kP = m_kP.in(Volts); // Convert to base units
-    slot0.kI = m_kI.in(Volts); // Convert to base units
-    slot0.kD = m_kD.in(Volts); // Convert to base units
 
     // Set current limits
     CurrentLimitsConfigs currentLimits = config.CurrentLimits;
@@ -161,8 +140,8 @@ public class CoralMech extends SubsystemBase {
    * @param request The PositionVoltage request
    */
   public void setDutyCycle(double percentage) {
-    m_coralPercentOutput.Output = percentage;
-    motor.setControl(m_coralPercentOutput);
+    DutyCycleOut dutycycle = new DutyCycleOut(percentage);
+    motor.setControl(dutycycle);
   }
 
   /**
