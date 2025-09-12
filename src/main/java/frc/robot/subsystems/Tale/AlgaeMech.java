@@ -27,7 +27,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 @Logged(name = "AlgaeMechSubsystem")
 public class AlgaeMech extends SubsystemBase {
   // Constants
-  private final int m_canID = 19;
+  private final int m_canId = 19;
   private static final String m_canBusName = "canivore";
   private final double m_gearRatio = 4;
   private final Voltage m_kP = Voltage.ofBaseUnits(0, Volts);
@@ -59,7 +59,7 @@ public class AlgaeMech extends SubsystemBase {
   /** Creates a new Arm Subsystem. */
   public AlgaeMech() {
     // Initialize motor controller
-    m_motor = new TalonFXS(m_canID, m_canBusName);
+    m_motor = new TalonFXS(m_canId, m_canBusName);
     // Digital input getter
 
     TalonFXSConfiguration config = new TalonFXSConfiguration();

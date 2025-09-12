@@ -33,12 +33,12 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 @Logged(name = "ElevatorSubsystem")
 public class ElevatorMech extends SubsystemBase {
   // Constants
-  private final int leaderCanID = 4;
-  private final int followerCanID = 5;
-  private final double gearRatio = 4; // Gear ratio
-  private final Voltage kP = Voltage.ofBaseUnits(2.0, Volts);
-  private final Voltage kI = Voltage.ofBaseUnits(0.0, Volts);
-  private final Voltage kD = Voltage.ofBaseUnits(0.0, Volts);
+  private final int m_leaderCanID = 4;
+  private final int m_followerCanID = 5;
+  private final double m_gearRatio = 4; // Gear ratio
+  private final Voltage m_kP = Voltage.ofBaseUnits(2.0, Volts);
+  private final Voltage m_kI = Voltage.ofBaseUnits(0.0, Volts);
+  private final Voltage m_kD = Voltage.ofBaseUnits(0.0, Volts);
   private final Voltage kA = Voltage.ofBaseUnits(0.0175, Volts);
   private final Voltage kV = Voltage.ofBaseUnits(0.25, Volts);
   private final Voltage kS = Voltage.ofBaseUnits(0.1, Volts);
@@ -59,13 +59,7 @@ public class ElevatorMech extends SubsystemBase {
   private static final String canBusName = "canivore";
 
   // Feedforward
-  private final ElevatorFeedforward feedforward =
-      new ElevatorFeedforward(
-          0, // kS
-          0, // kG
-          0.3, // kV
-          0.05 // kA
-          );
+  private final ElevatorFeedforward m_feedforward;
 
   // Motor controller
   private final TalonFX m_leader;
@@ -73,20 +67,24 @@ public class ElevatorMech extends SubsystemBase {
   private final CANcoder m_canCoder;
 
   // Simulation
-  private final ElevatorSim elevatorSim;
+  private final ElevatorSim m_elevatorSim;
+
+  // Example member variables (add m_ prefix and lowercase first letter)
+  private final DCMotor m_motor;
+  private Command m_defaultCommand;
 
   /** Creates a new Elevator Subsystem. */
   public ElevatorMech() {
     // Initialize m_motor controller
-    m_leader = new TalonFX(leaderCanID, canBusName);
-    m_follower = new TalonFX(followerCanID, canBusName);
-    m_canCoder = new CANcoder(leaderCanID, canBusName);
+    m_leader = new TalonFX(m_leaderCanID, canBusName);
+    m_follower = new TalonFX(m_followerCanID, canBusName);
+    m_canCoder = new CANcoder(m_leaderCanID, canBusName);
 
     // Configure leader motor
     TalonFXConfiguration m_leaderConfig = new TalonFXConfiguration();
 
     // Set remote sensor
-    m_leaderConfig.Feedback.FeedbackRemoteSensorID = leaderCanID;
+    m_leaderConfig.Feedback.FeedbackRemoteSensorID = m_leaderCanID;
     m_leaderConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
 
     // Set up the leader to use the fused CANcoder as its feedback sensor
@@ -126,9 +124,9 @@ public class ElevatorMech extends SubsystemBase {
     m_leaderConfig.Slot0.kV = kV.in(Volts); // A velocity target of 1 rps results in 0.12 V output
     m_leaderConfig.Slot0.kA = kA.in(Volts); // An acceleration of 1 rps/s requires 0.01 V output
     m_leaderConfig.Slot0.kP =
-        kP.in(Volts); // A position error of 2.5 rotations results in 12 V output
-    m_leaderConfig.Slot0.kI = kI.in(Volts); // no output for integrated error
-    m_leaderConfig.Slot0.kD = kD.in(Volts); // A velocity error of 1 rps results in 0.1 V output
+        m_kP.in(Volts); // A position error of 2.5 rotations results in 12 V output
+    m_leaderConfig.Slot0.kI = m_kI.in(Volts); // no output for integrated error
+    m_leaderConfig.Slot0.kD = m_kD.in(Volts); // A velocity error of 1 rps results in 0.1 V output
     // Configure PID for slot 0
     // Slot0Configs slot1 = m_leaderConfig.Slot0;
     // slot0.kP = kP.in(Volts); // Convert to base units
@@ -165,16 +163,24 @@ public class ElevatorMech extends SubsystemBase {
     m_leader.getConfigurator().apply(m_leaderConfig);
 
     // Initialize simulation
-    elevatorSim =
+    m_motor = DCMotor.getKrakenX60(2); // Motor type
+    m_elevatorSim =
         new ElevatorSim(
-            DCMotor.getKrakenX60(2), // Motor type
-            gearRatio,
+            m_motor, // Motor type
+            m_gearRatio,
             5, // Carriage mass (kg)
             drumRadius.in(Meters), // Drum radius (m)
             0, // Min height (m)
             1, // Max height (m)
             true, // Simulate gravity
             0 // Starting height (m)
+            );
+    m_feedforward =
+        new ElevatorFeedforward(
+            0, // kS
+            0, // kG
+            0.3, // kV
+            0.05 // kA
             );
   }
 
@@ -186,15 +192,15 @@ public class ElevatorMech extends SubsystemBase {
   @Override
   public void simulationPeriodic() {
     // Set input voltage from m_motor controller to simulation
-    elevatorSim.setInput(getVoltage().in(Volts));
+    m_elevatorSim.setInput(getVoltage().in(Volts));
 
     // Update simulation by 20ms
-    elevatorSim.update(0.020);
+    m_elevatorSim.update(0.020);
 
     // Convert meters to m_motor rotations
-    double positionToRotations = (1 / (2.0 * Math.PI * drumRadius.in(Meters))) * gearRatio;
-    double motorPosition = elevatorSim.getPositionMeters() * positionToRotations;
-    double motorVelocity = elevatorSim.getVelocityMetersPerSecond() * positionToRotations;
+    double positionToRotations = (1 / (2.0 * Math.PI * drumRadius.in(Meters))) * m_gearRatio;
+    double motorPosition = m_elevatorSim.getPositionMeters() * positionToRotations;
+    double motorVelocity = m_elevatorSim.getVelocityMetersPerSecond() * positionToRotations;
 
     m_leader.getSimState().setRawRotorPosition(motorPosition);
     m_leader.getSimState().setRotorVelocity(motorVelocity);
@@ -264,7 +270,7 @@ public class ElevatorMech extends SubsystemBase {
    * @return The elevator simulation model
    */
   public ElevatorSim getSimulation() {
-    return elevatorSim;
+    return m_elevatorSim;
   }
 
   /**

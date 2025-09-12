@@ -24,7 +24,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class CoralMech extends SubsystemBase {
   // Constants
   private static final String m_canBusName = "canivore";
-  private final int m_canID = 18;
+  private final int m_canId = 18;
   private final double m_gearRatio = 4; // Gear ratio
   private final Voltage m_kP = Voltage.ofBaseUnits(0, Volts);
   private final Voltage m_kI = Voltage.ofBaseUnits(0, Volts);
@@ -45,7 +45,7 @@ public class CoralMech extends SubsystemBase {
   /** Creates a new Arm Subsystem. */
   public CoralMech() {
     // Initialize motor controller
-    motor = new TalonFXS(m_canID, m_canBusName);
+    motor = new TalonFXS(m_canId, m_canBusName);
 
     // Configure motor
     TalonFXSConfiguration config = new TalonFXSConfiguration();
