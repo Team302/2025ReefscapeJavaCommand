@@ -5,6 +5,7 @@
 package frc.robot;
 
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
@@ -13,6 +14,7 @@ import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -53,6 +55,7 @@ public class RobotContainer {
   private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
 
   private final Telemetry logger = new Telemetry(MaxSpeed);
+
   private final Climber m_climber = new Climber();
 
   private final AlgaeMech m_algaeMech = new AlgaeMech();
@@ -165,6 +168,10 @@ public class RobotContainer {
                 // m_elevatorMech.setHeightCommand(0),
                 // m_armMech.setAngleCommand(90)
                 ));
+    m_driverController
+        .povLeft()
+        .and(m_driverController.y())
+        .whileTrue(m_elevatorMech.setHeightCommand(Distance.ofBaseUnits(29.25, Inches)));
     // climber
 
     m_driverController
