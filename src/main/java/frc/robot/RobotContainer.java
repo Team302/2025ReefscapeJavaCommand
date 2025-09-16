@@ -28,6 +28,7 @@ import frc.robot.subsystems.climber.*;
 import frc.robot.subsystems.climber.Climber;
 import frc.robot.subsystems.drivetrain.CommandSwerveDrivetrain;
 import frc.robot.utils.logging.NTLogger;
+import edu.wpi.first.networktables.*;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -55,7 +56,13 @@ public class RobotContainer {
   private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
 
   private final Telemetry logger = new Telemetry(MaxSpeed);
+    // logging
+  private NetworkTableInstance inst = NetworkTableInstance.getDefault();
+  private NetworkTable table = inst.getTable("test table");
+  private DoublePublisher elevatorTargetPublisher = table.getDoubleTopic("target angle").publish();
 
+////////////////////
+/// 
   private final Climber m_climber = new Climber();
 
   private final AlgaeMech m_algaeMech = new AlgaeMech();
@@ -172,6 +179,10 @@ public class RobotContainer {
         .povLeft()
         .and(m_driverController.y())
         .whileTrue(m_elevatorMech.setHeightCommand(Distance.ofBaseUnits(29.25, Inches)));
+    m_driverController
+        .povRight()
+        .and(m_driverController.y())
+        .whileTrue(m_elevatorMech.setHeightCommand(Distance.ofBaseUnits(20.75, Inches)));
     // climber
 
     m_driverController

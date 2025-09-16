@@ -1,9 +1,11 @@
 package frc.robot.subsystems.Tale;
 
 import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.MetersPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Rotation;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 
@@ -29,6 +31,7 @@ import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import edu.wpi.first.networktables.*;
 /** Elevator subsystem using TalonFX with Krakenx60 m_motor */
 @Logged(name = "ElevatorSubsystem")
 public class ElevatorMech extends SubsystemBase {
@@ -44,11 +47,9 @@ public class ElevatorMech extends SubsystemBase {
   private final Voltage kS = Voltage.ofBaseUnits(0.1, Volts);
 
   private final LinearVelocity maxVelocity = MetersPerSecond.of(2.5); // meters per second
-  private final LinearAcceleration maxAcceleration =
-      MetersPerSecondPerSecond.of(5); // meters per second squared
+  private final LinearAcceleration maxAcceleration = MetersPerSecondPerSecond.of(5); // meters per second squared
   private final boolean brakeMode = true;
-  private final Distance forwardSoftLimit =
-      Distance.ofBaseUnits(30, Meters); // max height in meters
+  private final Distance forwardSoftLimit = Distance.ofBaseUnits(30, Meters); // max height in meters
   private final Distance reverseSoftLimit = Distance.ofBaseUnits(0, Meters); // min height in meters
   private final boolean enableStatorLimit = true;
   private final Current statorCurrentLimit = Current.ofBaseUnits(120, Amps);
@@ -57,6 +58,13 @@ public class ElevatorMech extends SubsystemBase {
   private final Distance drumRadius = Distance.ofBaseUnits(0.0254, Meters); // meters
 
   private static final String canBusName = "canivore";
+
+  // logging
+  private NetworkTableInstance inst = NetworkTableInstance.getDefault();
+  private NetworkTable table = inst.getTable("test table");
+  private IntegerPublisher statePublish = table.getIntegerTopic("State").publish();
+  private int stateCounter = 0;
+  private DoublePublisher elevatorTargetPublisher = table.getDoubleTopic("elevator target").publish();
 
   // Feedforward
   private final ElevatorFeedforward m_feedforward;
@@ -116,6 +124,7 @@ public class ElevatorMech extends SubsystemBase {
         reverseSoftLimit.in(Meters); // Convert to base units
     m_followerConfig.HardwareLimitSwitch.ReverseLimitSource = ReverseLimitSourceValue.RemoteCANdiS2;
     m_followerConfig.HardwareLimitSwitch.ReverseLimitType = ReverseLimitTypeValue.NormallyOpen;
+    m_followerConfig.Feedback.SensorToMechanismRatio = 0.134535;
 
     // Motion Magic PID Values
     Slot0Configs slot0 = m_leaderConfig.Slot0;
@@ -147,8 +156,7 @@ public class ElevatorMech extends SubsystemBase {
     motionMagicConfigs.MotionMagicExpo_kA = 0.1; // Use a slower kA of 0.1 V/(rps/s)
 
     CANcoderConfiguration m_canCoderConfig = new CANcoderConfiguration();
-    m_canCoderConfig.MagnetSensor.MagnetOffset =
-        0.446289; // TODO get the actual offset and put it here!!!
+    m_canCoderConfig.MagnetSensor.MagnetOffset = 0.446289; // TODO get the actual offset and put it here!!!
     m_canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
     m_canCoder.getConfigurator().apply(m_canCoderConfig);
 
@@ -223,7 +231,7 @@ public class ElevatorMech extends SubsystemBase {
    */
   @Logged(name = "Height/Meters")
   public Distance getElevatorHeight() {
-    return calcDistanceFromRotations(getPosition());
+    return (Distance.ofBaseUnits(getPosition().in(Rotations), Inches));
   }
 
   /**
@@ -274,39 +282,19 @@ public class ElevatorMech extends SubsystemBase {
   }
 
   /**
-   * Calculate the elevator height based on rotations and drum radius.
-   *
-   * @return The elevator height as a Distance
-   */
-  private Distance calcDistanceFromRotations(Angle rotations) {
-    Distance circumference = Distance.ofBaseUnits(2 * Math.PI * drumRadius.in(Meters), Meters);
-
-    return Distance.ofBaseUnits(rotations.in(Rotations) * circumference.in(Meters), Meters);
-  }
-
-  /**
-   * Calculates the number of rotations needed to achieve a specified elevator height. This is the
-   * inverse function of calcElevatorDistance.
-   *
-   * @param distance The target distance (height) for the elevator
-   * @return The required angle (in rotations) to achieve that distance
-   */
-  private Angle calcRotationsFromDistance(Distance distance) {
-    Distance circumference = Distance.ofBaseUnits(2 * Math.PI * drumRadius.in(Meters), Meters);
-
-    double rotationsValue = distance.in(Meters) / circumference.in(Meters);
-
-    return Angle.ofBaseUnits(rotationsValue, Rotations);
-  }
-
-  /**
    * Sets the target position using Motion Magic.
    *
    * @param targetAngle The target angle in radians.
    */
-  private void setMotionMagicTarget(Angle targetAngle) {
+  private void setMotionMagicTarget(Distance targetHeight) {
+    elevatorTargetPublisher.set(targetHeight.in(Inches));
     MotionMagicExpoVoltage motionMagic = new MotionMagicExpoVoltage(0);
-    motionMagic.Position = targetAngle.in(Rotations);
+    motionMagic.Position = targetHeight.in(Inches);
+    
+    // logging
+    stateCounter++;
+    statePublish.set(stateCounter);
+
     m_leader.setControl(motionMagic);
   }
 
@@ -319,7 +307,8 @@ public class ElevatorMech extends SubsystemBase {
   public Command setHeightCommand(Distance targetHeight) {
     return run(
         () -> {
-          setMotionMagicTarget(calcRotationsFromDistance(targetHeight));
+
+          setMotionMagicTarget(targetHeight);
         });
   }
 
@@ -329,6 +318,6 @@ public class ElevatorMech extends SubsystemBase {
    * @return A command that stops the elevator
    */
   public Command stopCommand() {
-    return runOnce(() -> setMotionMagicTarget(getPosition()));
+    return runOnce(() -> setMotionMagicTarget(Distance.ofBaseUnits(getPosition().in(Rotations), Inches)));
   }
 }
