@@ -5,7 +5,6 @@ import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.MetersPerSecondPerSecond;
-import static edu.wpi.first.units.Units.Rotation;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 
@@ -32,6 +31,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import edu.wpi.first.networktables.*;
+
 /** Elevator subsystem using TalonFX with Krakenx60 m_motor */
 @Logged(name = "ElevatorSubsystem")
 public class ElevatorMech extends SubsystemBase {
@@ -47,9 +47,11 @@ public class ElevatorMech extends SubsystemBase {
   private final Voltage kS = Voltage.ofBaseUnits(0.1, Volts);
 
   private final LinearVelocity maxVelocity = MetersPerSecond.of(2.5); // meters per second
-  private final LinearAcceleration maxAcceleration = MetersPerSecondPerSecond.of(5); // meters per second squared
+  private final LinearAcceleration maxAcceleration =
+      MetersPerSecondPerSecond.of(5); // meters per second squared
   private final boolean brakeMode = true;
-  private final Distance forwardSoftLimit = Distance.ofBaseUnits(30, Meters); // max height in meters
+  private final Distance forwardSoftLimit =
+      Distance.ofBaseUnits(30, Meters); // max height in meters
   private final Distance reverseSoftLimit = Distance.ofBaseUnits(0, Meters); // min height in meters
   private final boolean enableStatorLimit = true;
   private final Current statorCurrentLimit = Current.ofBaseUnits(120, Amps);
@@ -64,7 +66,8 @@ public class ElevatorMech extends SubsystemBase {
   private NetworkTable table = inst.getTable("test table");
   private IntegerPublisher statePublish = table.getIntegerTopic("State").publish();
   private int stateCounter = 0;
-  private DoublePublisher elevatorTargetPublisher = table.getDoubleTopic("elevator target").publish();
+  private DoublePublisher elevatorTargetPublisher =
+      table.getDoubleTopic("elevator target").publish();
 
   // Feedforward
   private final ElevatorFeedforward m_feedforward;
@@ -156,7 +159,8 @@ public class ElevatorMech extends SubsystemBase {
     motionMagicConfigs.MotionMagicExpo_kA = 0.1; // Use a slower kA of 0.1 V/(rps/s)
 
     CANcoderConfiguration m_canCoderConfig = new CANcoderConfiguration();
-    m_canCoderConfig.MagnetSensor.MagnetOffset = 0.446289; // TODO get the actual offset and put it here!!!
+    m_canCoderConfig.MagnetSensor.MagnetOffset =
+        0.446289; // TODO get the actual offset and put it here!!!
     m_canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
     m_canCoder.getConfigurator().apply(m_canCoderConfig);
 
@@ -290,7 +294,7 @@ public class ElevatorMech extends SubsystemBase {
     elevatorTargetPublisher.set(targetHeight.in(Inches));
     MotionMagicExpoVoltage motionMagic = new MotionMagicExpoVoltage(0);
     motionMagic.Position = targetHeight.in(Inches);
-    
+
     // logging
     stateCounter++;
     statePublish.set(stateCounter);
@@ -307,7 +311,6 @@ public class ElevatorMech extends SubsystemBase {
   public Command setHeightCommand(Distance targetHeight) {
     return run(
         () -> {
-
           setMotionMagicTarget(targetHeight);
         });
   }
@@ -318,6 +321,7 @@ public class ElevatorMech extends SubsystemBase {
    * @return A command that stops the elevator
    */
   public Command stopCommand() {
-    return runOnce(() -> setMotionMagicTarget(Distance.ofBaseUnits(getPosition().in(Rotations), Inches)));
+    return runOnce(
+        () -> setMotionMagicTarget(Distance.ofBaseUnits(getPosition().in(Rotations), Inches)));
   }
 }

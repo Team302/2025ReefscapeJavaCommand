@@ -56,13 +56,13 @@ public class RobotContainer {
   private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
 
   private final Telemetry logger = new Telemetry(MaxSpeed);
-    // logging
+  // logging
   private NetworkTableInstance inst = NetworkTableInstance.getDefault();
   private NetworkTable table = inst.getTable("test table");
   private DoublePublisher elevatorTargetPublisher = table.getDoubleTopic("target angle").publish();
 
-////////////////////
-/// 
+  ////////////////////
+  ///
   private final Climber m_climber = new Climber();
 
   private final AlgaeMech m_algaeMech = new AlgaeMech();
