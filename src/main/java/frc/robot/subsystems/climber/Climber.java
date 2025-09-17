@@ -1,17 +1,18 @@
 package frc.robot.subsystems.climber;
 
+import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degree;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.DegreesPerSecond;
+import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
-import static edu.wpi.first.units.Units.Meters;
-import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Volts;
 
-import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.SoftwareLimitSwitchConfigs;
@@ -21,18 +22,17 @@ import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-
 import edu.wpi.first.epilogue.Logged;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.units.measure.AngularAcceleration;
-import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.units.measure.Current;
-import edu.wpi.first.units.measure.Temperature;
+import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.Temperature;
+import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -74,11 +74,6 @@ public class Climber extends SubsystemBase {
   private final TalonFX motor;
   private final PositionVoltage positionRequest;
   private final VelocityVoltage velocityRequest;
-  private final StatusSignal<Angle> positionSignal;
-  private final StatusSignal<AngularVelocity> velocitySignal;
-  private final StatusSignal<Voltage> voltageSignal;
-  private final StatusSignal<Current> statorCurrentSignal;
-  private final StatusSignal<Temperature> temperatureSignal;
 
   private DutyCycleOut m_dutyCycleOut = new DutyCycleOut(0);
   // Simulation
@@ -92,13 +87,6 @@ public class Climber extends SubsystemBase {
     // Create control requests
     positionRequest = new PositionVoltage(0).withSlot(0);
     velocityRequest = new VelocityVoltage(0).withSlot(0);
-
-    // get status signals
-    positionSignal = motor.getPosition();
-    velocitySignal = motor.getVelocity();
-    voltageSignal = motor.getMotorVoltage();
-    statorCurrentSignal = motor.getStatorCurrent();
-    temperatureSignal = motor.getDeviceTemp();
 
     TalonFXConfiguration config = new TalonFXConfiguration();
 
@@ -150,16 +138,13 @@ public class Climber extends SubsystemBase {
 
   /** Update simulation and telemetry. */
   @Override
-  public void periodic() {
-    BaseStatusSignal.refreshAll(
-        positionSignal, velocitySignal, voltageSignal, statorCurrentSignal, temperatureSignal);
-  }
+  public void periodic() {}
 
   /** Update simulation. */
   @Override
   public void simulationPeriodic() {
     // Set input voltage from motor controller to simulation
-    armSim.setInput(getVoltage());
+    armSim.setInput(getVoltage().in(Volts));
 
     // Update simulation by 20ms
     armSim.update(0.020);
@@ -171,9 +156,9 @@ public class Climber extends SubsystemBase {
    * @return Position in Rotations
    */
   @Logged(name = "Position/Rotations")
-  public double getPosition() {
+  public Angle getPosition() {
     // Rotations
-    return positionSignal.getValueAsDouble();
+    return motor.getPosition().getValue();
   }
 
   /**
@@ -182,8 +167,8 @@ public class Climber extends SubsystemBase {
    * @return Velocity in rotations per second
    */
   @Logged(name = "Velocity")
-  public double getVelocity() {
-    return velocitySignal.getValueAsDouble();
+  public AngularVelocity getVelocity() {
+    return motor.getVelocity().getValue();
   }
 
   /**
@@ -192,8 +177,8 @@ public class Climber extends SubsystemBase {
    * @return Applied voltage
    */
   @Logged(name = "Voltage")
-  public double getVoltage() {
-    return voltageSignal.getValueAsDouble();
+  public Voltage getVoltage() {
+    return motor.getMotorVoltage().getValue();
   }
 
   /**
@@ -202,8 +187,8 @@ public class Climber extends SubsystemBase {
    * @return Motor current in amps
    */
   @Logged(name = "Current")
-  public double getCurrent() {
-    return statorCurrentSignal.getValueAsDouble();
+  public Current getCurrent() {
+    return motor.getSupplyCurrent().getValue();
   }
 
   /**
@@ -212,8 +197,8 @@ public class Climber extends SubsystemBase {
    * @return Motor temperature in Celsius
    */
   @Logged(name = "Temperature")
-  public double getTemperature() {
-    return temperatureSignal.getValueAsDouble();
+  public Temperature getTemperature() {
+    return motor.getDeviceTemp().getValue();
   }
 
   /**
@@ -232,7 +217,7 @@ public class Climber extends SubsystemBase {
    * @param velocityDegPerSec The target velocity in degrees per second
    */
   public void setVelocity(AngularVelocity velocityDegPerSec) {
-    setVelocity(velocityDegPerSec.in(DegreesPerSecond), 0);
+    setVelocity(velocityDegPerSec, AngularAcceleration.ofBaseUnits(0, DegreesPerSecondPerSecond));
   }
 
   /**
@@ -241,12 +226,14 @@ public class Climber extends SubsystemBase {
    * @param velocityDegPerSec The target velocity in degrees per second
    * @param acceleration The acceleration in degrees per second squared
    */
-  public void setVelocity(double velocityDegPerSec, double acceleration) {
+  public void setVelocity(AngularVelocity velocityDegPerSec, AngularAcceleration acceleration) {
     // Convert degrees/sec to rotations/sec
-    double velocityRadPerSec = Units.degreesToRadians(velocityDegPerSec);
+    double velocityRadPerSec = Units.degreesToRadians(velocityDegPerSec.in(DegreesPerSecond));
     double velocityRotations = velocityRadPerSec / (2.0 * Math.PI);
 
-    double ffVolts = feedforward.calculate(getVelocity(), acceleration);
+    double ffVolts =
+        feedforward.calculate(
+            getPosition().in(Radians), acceleration.in(DegreesPerSecondPerSecond));
     motor.setControl(velocityRequest.withVelocity(velocityRotations).withFeedForward(ffVolts));
   }
 
@@ -267,7 +254,7 @@ public class Climber extends SubsystemBase {
    */
   public Command moveToAngleCommand(Angle angle) {
     return run(() -> {
-          Angle currentAngle = Angle.ofBaseUnits(getPosition(), Rotations);
+          Angle currentAngle = getPosition();
           Angle error =
               Angle.ofBaseUnits(angle.in(Rotations) - currentAngle.in(Rotations), Rotations);
           AngularVelocity velocityDegPerSec =
@@ -280,7 +267,7 @@ public class Climber extends SubsystemBase {
         })
         .until(
             () -> {
-              Angle currentAngle = Angle.ofBaseUnits(getPosition(), Rotations);
+              Angle currentAngle = getPosition();
               return Math.abs(angle.in(Degrees) - currentAngle.in(Degrees))
                   < 2.0; // 2 degree tolerance
             })
